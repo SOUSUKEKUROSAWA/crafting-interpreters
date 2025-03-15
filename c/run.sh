@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # イメージ名とタグを設定
-IMAGE_NAME="hello-c"
+IMAGE_NAME="main-c"
 TAG="1.0"
 
 # Dockerイメージをビルド
