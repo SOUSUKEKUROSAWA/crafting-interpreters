@@ -35,8 +35,8 @@ public class Lox {
 
         for (;;) {
             System.out.print("> ");
-            String line = reader.readLine();
-            if (line == null) break; // Control-D がタイプされると null が返る
+            String line = reader.readLine(); // Control-D がタイプされると null が返る
+            if (line == null) break;
             run(line);
 
             // 対話処理ではエラーがあっても終了しない（フラグを元に戻す）
