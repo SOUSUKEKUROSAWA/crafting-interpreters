@@ -77,6 +77,8 @@ class Scanner {
                     // 行末まで読み飛ばす
                     // WARNING: 下部で line++ を実行する必要があるため，改行の手前で止めている
                     while (peek() != '\n' && !isAtEnd()) advance();
+                } else if (match('*')) {
+                    blockComment();
                 } else {
                     addToken(SLASH);
                 }
@@ -205,5 +207,24 @@ class Scanner {
 
     private boolean isAlphaNumeric(char c) {
         return isAlpha(c) || isDigit(c);
+    }
+
+    private void blockComment() {
+        while (true) {
+            if (isAtEnd()) {
+                Lox.error(line, "Unterminated block comment. The block comment must be closed by '*/'.");
+                return;
+            }
+
+            if (peek() == '*' && peekNext() == '/') {
+                // 終端文字「*/」を読み飛ばす
+                advance();
+                advance();
+                return;
+            }
+
+            if (peek() == '\n') line++;
+            advance();
+        }
     }
 }
