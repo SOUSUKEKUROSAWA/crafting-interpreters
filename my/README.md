@@ -12,4 +12,5 @@
 
 ```sh
 java -cp jlox/bin com.craftinginterpreters.lox.Lox
+java -cp jlox/bin com.craftinginterpreters.lox.Lox jlox/sample.lox
 ```
