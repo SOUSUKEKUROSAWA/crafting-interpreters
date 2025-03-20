@@ -80,7 +80,7 @@ class Scanner {
                     // 数値リテラル
                     number();
                 } else {
-                Lox.error(line, "Unexpected character '" + c + "'.");
+                    Lox.error(line, "Unexpected character '" + c + "'.");
                 }
                 break;
         }
@@ -88,6 +88,11 @@ class Scanner {
 
     private boolean isAtEnd() {
         return current >= source.length();
+    }
+
+    private char peek() {
+        if (isAtEnd()) return '\0';
+        return source.charAt(current);
     }
 
     private char peekNext() {
@@ -101,15 +106,6 @@ class Scanner {
         return result;
     }
 
-    private void addToken(TokenType type) {
-        addToken(type, null);
-    }
-
-    private void addToken(TokenType type, Object literal) {
-        String text = source.substring(start, current);
-        tokens.add(new Token(type, text, literal, line));
-    }
-
     // 条件付き advance()
     private boolean match(char expected) {
         if (isAtEnd()) return false;
@@ -119,9 +115,13 @@ class Scanner {
         return true;
     }
 
-    private char peek() {
-        if (isAtEnd()) return '\0';
-        return source.charAt(current);
+    private void addToken(TokenType type) {
+        addToken(type, null);
+    }
+
+    private void addToken(TokenType type, Object literal) {
+        String text = source.substring(start, current);
+        tokens.add(new Token(type, text, literal, line));
     }
 
     private void string() {
