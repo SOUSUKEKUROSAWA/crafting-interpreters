@@ -50,6 +50,28 @@ class Scanner {
             case '<': addToken(match('=') ? LESS_EQUAL : LESS); break;
             case '>': addToken(match('=') ? GREATER_EQUAL : GREATER); break;
 
+            // SLASH または コメント行
+            case '/':
+                if (match('/')) {
+                    // 行末まで読み飛ばす
+                    // WARNING: 下部で line++ を実行する必要があるため，改行の手前で止めている
+                    while (peek() != '\n' && !isAtEnd()) advance();
+                } else {
+                    addToken(SLASH);
+                }
+                break;
+            
+            // 空白文字
+            case ' ':
+            case '\r':
+            case '\t':
+                break;
+            
+            // 改行
+            case '\n':
+                line++;
+                break;
+
             default:
                 Lox.error(line, "Unexpected character '" + c + "'.");
                 break;
@@ -80,5 +102,10 @@ class Scanner {
 
         current++;
         return true;
+    }
+
+    private char peek() {
+        if (isAtEnd()) return '\0';
+        return source.charAt(current);
     }
 }
