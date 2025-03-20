@@ -17,3 +17,14 @@ jlox
 # Run File
 jlox jlox/sample.lox
 ```
+
+## Grammar
+
+```ebnf
+expression  -> literal | unary | binary | grouping ;
+literal     -> NUMBER | STRING | "true" | "false" | "nil" ;
+unary       -> ( "-" | "!" ) expression ;
+binary      -> expression operator expression
+grouping    -> "(" expression ")" ;
+operator    -> "==" | "!=" | "<" | "<=" | ">" | ">=" | "+" | "-" | "*" | "/"
+```
