@@ -76,13 +76,23 @@ class Scanner {
             case '"': string(); break;
 
             default:
+                if (isDigit(c)) {
+                    // 数値リテラル
+                    number();
+                } else {
                 Lox.error(line, "Unexpected character '" + c + "'.");
+                }
                 break;
         }
     }
 
     private boolean isAtEnd() {
         return current >= source.length();
+    }
+
+    private char peekNext() {
+        if (current + 1 >= source.length()) return '\0';
+        return source.charAt(current + 1);
     }
 
     private char advance() {
@@ -134,5 +144,23 @@ class Scanner {
         String value = source.substring(start + 1, current - 1);
 
         addToken(STRING, value);
+    }
+
+    private boolean isDigit(char c) {
+        return '0' <= c && c <= '9';
+    }
+
+    private void number() {
+        while (isDigit(peek())) advance();
+
+        // 小数点の処理
+        if (peek() == '.' && isDigit(peekNext())) {
+            // 小数点を読み飛ばす
+            advance();
+
+            while (isDigit(peek())) advance();
+        }
+
+        addToken(NUMBER, Double.parseDouble(source.substring(start, current)));
     }
 }
