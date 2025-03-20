@@ -48,7 +48,7 @@ public class Lox {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
 
-        // FIXME: 現時点ではトークンをプリントするだけ
+        // TODO: 今はトークンを表示しているだけだが，最終的にはパーサを呼び出す
         for (Token token : tokens) {
             System.out.println(token);
         }
