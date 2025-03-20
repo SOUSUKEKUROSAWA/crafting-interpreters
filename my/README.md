@@ -11,6 +11,9 @@
 ## Usage
 
 ```sh
-java -cp jlox/bin com.craftinginterpreters.lox.Lox
-java -cp jlox/bin com.craftinginterpreters.lox.Lox jlox/sample.lox
+# Run Prompt
+jlox
+
+# Run File
+jlox jlox/sample.lox
 ```

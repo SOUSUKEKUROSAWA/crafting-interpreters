@@ -11,5 +11,9 @@ done
 
 # TODO: 必要に応じてビルド手順を追記していく
 
+# エイリアスの登録
+echo 'alias jlox="java -cp jlox/bin com.craftinginterpreters.lox.Lox"' >> ~/.bashrc
+echo "Alias 'jlox' added."
+
 cd /app/src
 exec bash
