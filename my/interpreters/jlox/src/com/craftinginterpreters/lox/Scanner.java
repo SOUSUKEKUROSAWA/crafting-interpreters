@@ -72,6 +72,9 @@ class Scanner {
                 line++;
                 break;
 
+            // 文字列リテラル
+            case '"': string(); break;
+
             default:
                 Lox.error(line, "Unexpected character '" + c + "'.");
                 break;
@@ -109,5 +112,27 @@ class Scanner {
     private char peek() {
         if (isAtEnd()) return '\0';
         return source.charAt(current);
+    }
+
+    private void string() {
+        while (peek() != '"' && !isAtEnd()) {
+            // 複数行の文字列リテラルをサポートする
+            if (peek() == '\n') line++;
+            advance();
+        }
+
+        if (isAtEnd()) {
+            Lox.error(line, "Unterminated string. The string literal must be closed by '\"'.");
+            return;
+        }
+
+        // 終端文字「"」を読み飛ばす
+        advance();
+
+        // 前後の " を取り除く
+        // TODO: エスケープシーケンスをサポートするなら，エスケープ解除の処理も追加する
+        String value = source.substring(start + 1, current - 1);
+
+        addToken(STRING, value);
     }
 }
