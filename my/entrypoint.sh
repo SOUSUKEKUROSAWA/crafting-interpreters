@@ -12,8 +12,11 @@ done
 # TODO: 必要に応じてビルド手順を追記していく
 
 # エイリアスの登録
+echo "Adding aliases..."
 echo 'alias jlox="java -cp jlox/bin com.craftinginterpreters.lox.Lox"' >> ~/.bashrc
-echo "Alias 'jlox' added."
+echo "Added: jlox <=== java -cp jlox/bin com.craftinginterpreters.lox.Lox"
+echo 'alias ast="java -cp jlox/bin com.craftinginterpreters.tool.GenerateAst"' >> ~/.bashrc
+echo "Added: ast <=== java -cp jlox/bin com.craftinginterpreters.tool.GenerateAst"
 
 cd /app/src
 exec bash
