@@ -35,6 +35,12 @@ public class GenerateAst {
         writer.println("import java.util.List;");
         writer.println();
         writer.println("abstract class " + baseName + " {");
+
+        // 規定クラスの accept メソッド
+        writer.println("  abstract <R> R accept(Visitor<R> visitor);");
+        writer.println();
+
+        defineVisitor(writer, baseName, types);
     
         // Ast クラス群
         for (String type : types) {
@@ -60,6 +66,7 @@ public class GenerateAst {
         for (String field : fields) {
             writer.println("    final " + field + ";");
         }
+        writer.println();
     
         // コンストラクタ
         writer.println("    " + className + "(" + fieldList + ") {");
@@ -68,8 +75,32 @@ public class GenerateAst {
             writer.println("      this." + name + " = " + name + ";");
         }
         writer.println("    }");
+
+        // Visitor パターン
+        writer.println();
+        writer.println("    @Override");
+        writer.println("    <R> R accept(Visitor<R> visitor) {");
+        writer.println("      return visitor.visit" + className + baseName + "(this);");
+        writer.println("    }");
     
         writer.println("  }");
+        writer.println();
+    }
+
+    private static void defineVisitor(
+        PrintWriter writer,
+        String baseName,
+        List<String> types
+    ) {
+        writer.println("  interface Visitor<R> {");
+    
+        for (String type : types) {
+            String typeName = type.split(":")[0].trim();
+            writer.println("    R visit" + typeName + baseName + "(" + typeName + " " + baseName.toLowerCase() + ");");
+        }
+    
+        writer.println("  }");
+        writer.println();
     }
 }
 
