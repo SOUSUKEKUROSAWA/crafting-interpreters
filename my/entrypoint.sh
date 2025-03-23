@@ -17,6 +17,8 @@ echo 'alias jlox="java -cp jlox/bin com.craftinginterpreters.lox.Lox"' >> ~/.bas
 echo "Added: jlox <=== java -cp jlox/bin com.craftinginterpreters.lox.Lox"
 echo 'alias ast="java -cp jlox/bin com.craftinginterpreters.tool.GenerateAst"' >> ~/.bashrc
 echo "Added: ast <=== java -cp jlox/bin com.craftinginterpreters.tool.GenerateAst"
+echo 'alias past="java -cp jlox/bin com.craftinginterpreters.lox.AstPrinter"' >> ~/.bashrc
+echo "Added: past <=== java -cp jlox/bin com.craftinginterpreters.lox.AstPrinter"
 
 cd /app/src
 exec bash

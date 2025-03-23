@@ -1,6 +1,6 @@
 # My Interpreters
 
-自作 JLOX での動作確認用のディレクトリ
+自作 JLOX での動作確認用ディレクトリ
 
 ## Setup
 
@@ -19,6 +19,9 @@ jlox jlox/sample.lox
 
 # Generate Ast
 ast jlox/src/com/craftinginterpreters/lox
+
+# Print Ast
+past
 ```
 
 ## Grammar
