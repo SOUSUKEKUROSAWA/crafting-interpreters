@@ -34,3 +34,10 @@ binary      -> expression operator expression
 grouping    -> "(" expression ")" ;
 operator    -> "==" | "!=" | "<" | "<=" | ">" | ">=" | "+" | "-" | "*" | "/"
 ```
+
+## Want to add
+
+- リスト／配列
+- 例外処理
+- ループの break, continue
+- switch
