@@ -38,6 +38,8 @@ unary       -> ( "-" | "!" ) unary | primary ;              // 左
 primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ; // 右
 ```
 
+※ factor -> factor ( "/" | "*" ) unary | unary ; のようにも書けるが，Parser を実装する際に再帰呼び出しが無限ループに陥るため不可
+
 ## Want to add
 
 - リスト／配列
