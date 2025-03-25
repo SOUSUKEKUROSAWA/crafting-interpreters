@@ -26,13 +26,16 @@ past
 
 ## Grammar
 
+下位ほど優先度高（先に評価される）
+
 ```ebnf
-expression  -> literal | unary | binary | grouping ;
-literal     -> NUMBER | STRING | "true" | "false" | "nil" ;
-unary       -> ( "-" | "!" ) expression ;
-binary      -> expression operator expression
-grouping    -> "(" expression ")" ;
-operator    -> "==" | "!=" | "<" | "<=" | ">" | ">=" | "+" | "-" | "*" | "/"
+expression  -> equality ;
+equality    -> comparison ( ( "!=" | "==" ) comparison )* ; // 左結合（左の演算子が先に評価される）
+comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ; // 左
+term        -> factor ( ( "-" | "+" ) factor )* ;           // 左
+factor      -> unary ( ( "/" | "*" ) unary )* ;             // 左
+unary       -> ( "-" | "!" ) unary | primary ;              // 左
+primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ; // 右
 ```
 
 ## Want to add
