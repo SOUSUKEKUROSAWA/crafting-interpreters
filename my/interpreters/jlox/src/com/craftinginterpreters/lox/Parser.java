@@ -18,14 +18,13 @@ class Parser {
     }
 
     // equality -> comparison ( ( "!=" | "==" ) comparison )* ;
-    // Tokens に ( "!=" | "==" ) が含まれていれば，equality として解析する．
-    // そうでなければ，comparison に解析を委譲する．
     private Expr equality() {
         // comparison
         Expr expr = comparison();
 
         // ( ( "!=" | "==" ) comparison )*
         while (match(BANG_EQUAL, EQUAL_EQUAL)) {
+            // 演算子がマッチしたら，Binary として expr を更新する．
             Token operator = previous();
             Expr right = comparison();
             expr = new Expr.Binary(expr, operator, right);
@@ -35,14 +34,13 @@ class Parser {
     }
 
     // comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-    // Tokens に ( ">" | ">=" | "<" | "<=" ) が含まれていれば，comparison として解析する．
-    // そうでなければ，term に解析を委譲する．
     private Expr comparison() {
         // term
         Expr expr = term();
 
         // ( ( ">" | ">=" | "<" | "<=" ) term )*
         while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
+            // 演算子がマッチしたら，Binary として expr を更新する．
             Token operator = previous();
             Expr right = term();
             expr = new Expr.Binary(expr, operator, right);
@@ -52,14 +50,13 @@ class Parser {
     }
 
     // term -> factor ( ( "-" | "+" ) factor )* ;
-    // Tokens に ( "-" | "+" ) が含まれていれば，term として解析する．
-    // そうでなければ，factor に解析を委譲する．
     private Expr term() {
         // factor
         Expr expr = factor();
 
         // ( ( "-" | "+" ) factor )*
         while (match(MINUS, PLUS)) {
+            // 演算子がマッチしたら，Binary として expr を更新する．
             Token operator = previous();
             Expr right = factor();
             expr = new Expr.Binary(expr, operator, right);
@@ -69,14 +66,13 @@ class Parser {
     }
 
     // factor -> unary ( ( "/" | "*" ) unary )* ;
-    // Tokens に ( "/" | "*" ) が含まれていれば，factor として解析する．
-    // そうでなければ，unary に解析を委譲する．
     private Expr factor() {
         // unary
         Expr expr = unary();
 
         // ( ( "/" | "*" ) unary )*
         while (match(SLASH, STAR)) {
+            // 演算子がマッチしたら，Binary として expr を更新する．
             Token operator = previous();
             Expr right = unary();
             expr = new Expr.Binary(expr, operator, right);
@@ -86,8 +82,6 @@ class Parser {
     }
 
     // unary -> ( "!" | "-" ) unary | primary ;
-    // Tokens に ( "!" | "-" ) が含まれていれば，unary として解析する．
-    // そうでなければ，primary に解析を委譲する．
     private Expr unary() {
         // ( "!" | "-" ) unary
         if (match(BANG, MINUS)) {
