@@ -160,4 +160,28 @@ class Parser {
         Lox.error(token, message);
         return new ParseError();
     }
+
+    // パニックモードに入った後に呼び出し，
+    // 次の文の先頭（パニックモードを抜ける位置）までトークンを進める．
+    private void synchronize() {
+        advance();
+
+        while (!isAtEnd()) {
+            if (previous().type == SEMICOLON) return;
+
+            switch (peek().type) {
+                case CLASS:
+                case FOR:
+                case FUN:
+                case IF:
+                case PRINT:
+                case RETURN:
+                case VAR:
+                case WHILE:
+                    return;
+            }
+
+            advance();
+        }
+    }
 }
