@@ -47,11 +47,12 @@ public class Lox {
     private static void run(String source) {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
+        Parser parser = new Parser(tokens);
+        Expr expression = parser.parse();
 
-        // TODO: 今はトークンを表示しているだけだが，最終的にはパーサを呼び出す
-        for (Token token : tokens) {
-            System.out.println(token);
-        }
+        if (hadError) return;
+
+        System.out.println(new AstPrinter().print(expression));
     }
 
     static void error(int line, String message) {

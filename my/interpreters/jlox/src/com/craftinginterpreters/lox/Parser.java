@@ -13,6 +13,14 @@ class Parser {
         this.tokens = tokens;
     }
 
+    Expr parse() {
+        try {
+            return expression();
+        } catch (ParseError error) {
+            return null;
+        }
+    }
+
     // expression -> equality ;
     // equality に解析を委譲する．
     private Expr expression() {
