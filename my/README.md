@@ -31,8 +31,8 @@ equality    -> comparison ( ( "!=" | "==" ) comparison )* ; // 左結合（左�
 comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ; // 左
 term        -> factor ( ( "-" | "+" ) factor )* ;           // 左
 factor      -> unary ( ( "/" | "*" ) unary )* ;             // 左
-unary       -> ( "-" | "!" ) unary | primary ;              // 左
-primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ; // 右
+unary       -> ( "-" | "!" ) unary | primary ;              // 右
+primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
 ```
 
 ※ factor -> factor ( "/" | "*" ) unary | unary ; のようにも書けるが，Parser を実装する際に再帰呼び出しが無限ループに陥るため不可
