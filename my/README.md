@@ -26,7 +26,8 @@ ast jlox/src/com/craftinginterpreters/lox
 下位ほど優先度高（先に評価される）
 
 ```ebnf
-expression  -> equality ;
+expression  -> comma ;
+comma       -> equality ( "," equality )* ;
 equality    -> comparison ( ( "!=" | "==" ) comparison )* ; // 左結合（左の演算子が先に評価される）
 comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ; // 左
 term        -> factor ( ( "-" | "+" ) factor )* ;           // 左

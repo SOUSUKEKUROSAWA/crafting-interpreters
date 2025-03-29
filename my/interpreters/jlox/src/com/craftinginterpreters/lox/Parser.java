@@ -22,10 +22,26 @@ class Parser {
         }
     }
 
-    // expression -> equality ;
-    // equality に解析を委譲する．
+    // expression -> comma ;
+    // comma に解析を委譲する．
     private Expr expression() {
-        return equality();
+        return comma();
+    }
+
+    // comma -> equality ( "," equality )* ;
+    private Expr comma() {
+        // equality
+        Expr expr = equality();
+
+        // ( "," equality )*
+        while (match(COMMA)) {
+            // 演算子がマッチしたら，Binary として expr を更新する．
+            Token operator = previous();
+            Expr right = equality();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
     }
 
     // equality -> comparison ( ( "!=" | "==" ) comparison )* ;
