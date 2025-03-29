@@ -37,6 +37,16 @@ primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
 
 ※ factor -> factor ( "/" | "*" ) unary | unary ; のようにも書けるが，Parser を実装する際に再帰呼び出しが無限ループに陥るため不可
 
+## Types
+
+| Lox の型 | Java による表現 |
+| - | - |
+| 全ての Lox 値 | Object |
+| nil | null |
+| ブール型 | Boolean |
+| 数値型 | Double |
+| 文字列型 | String |
+
 ## Want to add
 
 - リスト／配列
