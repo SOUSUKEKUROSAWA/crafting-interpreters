@@ -21,6 +21,14 @@ class Interpreter imprements Expr.Visitor<Object> {
         return null;
     }
 
+    // false, null : false を返す（falsey）
+    // その他全て : true を返す（truthy）
+    private boolean isTruthy(Object object) {
+        if (object == null) return false;
+        if (object instanceof Boolean) return (boolean)object;
+        return true;
+    }
+
     @Override
     public Object visitGroupingExpr(Expr.Grouping expr) {
         return evaluate(expr.expression);
