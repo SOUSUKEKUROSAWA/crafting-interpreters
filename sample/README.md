@@ -28,6 +28,12 @@ $ ./jlox sample.lox
 Hello
 ```
 
+## The Answer of Challenge
+
+```sh
+cd craftinginterpreters/note/answers/*
+```
+
 ## Lox Syntax
 
 ```lox
