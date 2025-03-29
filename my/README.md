@@ -38,6 +38,7 @@ primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
 
 ※ ternary は equality から始めることで，equality より優先度が低い（後に評価される）ことを定義している
 ※ ternary -> equality ( "?" expression ":" expression )? ; と書くと左結合になってしまい，`a ? b : c ? d : e` は `(a ? b : c) ? d : e` と解釈されてしまい，意図していた `a ? b : (c ? d : e)` とは異なってしまうため不可
+※ ternary は他と違い `(...)?` を使用しているが，再帰呼び出しになっているので，三項演算子は無限にネストできる
 ※ factor -> factor ( "/" | "*" ) unary | unary ; のようにも書けるが，Parser を実装する際に再帰呼び出しが無限ループに陥るため不可
 
 ## Want to add
