@@ -19,9 +19,6 @@ jlox jlox/sample.lox
 
 # Generate Ast
 ast jlox/src/com/craftinginterpreters/lox
-
-# Print Ast
-past
 ```
 
 ## Grammar
