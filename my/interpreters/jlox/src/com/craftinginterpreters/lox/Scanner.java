@@ -64,6 +64,8 @@ class Scanner {
             case '+': addToken(PLUS); break;
             case ';': addToken(SEMICOLON); break;
             case '*': addToken(STAR); break;
+            case '?': addToken(QUESTION); break;
+            case ':': addToken(COLON); break;
 
             // 1文字または2文字のトークン
             case '!': addToken(match('=') ? BANG_EQUAL : BANG); break;

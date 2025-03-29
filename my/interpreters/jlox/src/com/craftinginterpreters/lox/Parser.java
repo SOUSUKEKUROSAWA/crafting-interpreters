@@ -22,10 +22,26 @@ class Parser {
         }
     }
 
-    // expression -> equality ;
-    // equality に解析を委譲する．
+    // expression -> ternary ;
+    // ternary に解析を委譲する．
     private Expr expression() {
-        return equality();
+        return ternary();
+    }
+
+    // ternary -> equality ( "?" expression ":" ternary )? ;
+    private Expr ternary() {
+        // equality
+        Expr expr = equality();
+
+        // ( "?" expression ":" ternary )?
+        if (match(QUESTION)) {
+            Expr thenBranch = expression();
+            consume(COLON, "Expect ':' after then branch.");
+            Expr elseBranch = ternary();
+            expr = new Expr.Ternary(expr, thenBranch, elseBranch);
+        }
+
+        return expr;
     }
 
     // equality -> comparison ( ( "!=" | "==" ) comparison )* ;

@@ -26,7 +26,8 @@ ast jlox/src/com/craftinginterpreters/lox
 下位ほど優先度高（先に評価される）
 
 ```ebnf
-expression  -> equality ;
+expression  -> ternary ;
+ternary     -> equality ( "?" expression ":" ternary )? ;   // 右
 equality    -> comparison ( ( "!=" | "==" ) comparison )* ; // 左結合（左の演算子が先に評価される）
 comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ; // 左
 term        -> factor ( ( "-" | "+" ) factor )* ;           // 左
@@ -35,6 +36,8 @@ unary       -> ( "-" | "!" ) unary | primary ;              // 右
 primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
 ```
 
+※ ternary は equality から始めることで，equality より優先度が低い（後に評価される）ことを定義している
+※ ternary -> equality ( "?" expression ":" expression )? ; と書くと左結合になってしまい，`a ? b : c ? d : e` は `(a ? b : c) ? d : e` と解釈されてしまい，意図していた `a ? b : (c ? d : e)` とは異なってしまうため不可
 ※ factor -> factor ( "/" | "*" ) unary | unary ; のようにも書けるが，Parser を実装する際に再帰呼び出しが無限ループに陥るため不可
 
 ## Want to add

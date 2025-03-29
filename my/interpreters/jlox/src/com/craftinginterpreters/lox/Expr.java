@@ -6,10 +6,28 @@ abstract class Expr {
   abstract <R> R accept(Visitor<R> visitor);
 
   interface Visitor<R> {
+    R visitTernaryExpr(Ternary expr);
     R visitBinaryExpr(Binary expr);
     R visitGroupingExpr(Grouping expr);
     R visitLiteralExpr(Literal expr);
     R visitUnaryExpr(Unary expr);
+  }
+
+  static class Ternary extends Expr {
+    final Expr condition;
+    final Expr thenBranch;
+    final Expr elseBranch;
+
+    Ternary(Expr condition, Expr thenBranch, Expr elseBranch) {
+      this.condition = condition;
+      this.thenBranch = thenBranch;
+      this.elseBranch = elseBranch;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitTernaryExpr(this);
+    }
   }
 
   static class Binary extends Expr {
