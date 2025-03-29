@@ -3,6 +3,7 @@ package com.craftinginterpreters.lox;
 import java.util.List;
 import static com.craftinginterpreters.lox.TokenType.*;
 
+// Expr を継承したクラスのインスタンスを入れ子にしていくことで，AST を構築する．
 class Parser {
     private static class ParseError extends RuntimeException {}
 
