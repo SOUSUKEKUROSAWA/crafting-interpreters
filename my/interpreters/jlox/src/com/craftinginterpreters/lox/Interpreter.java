@@ -61,8 +61,6 @@ class Interpreter implements Expr.Visitor<Object> {
                 }
 
                 throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
-
-                break;
             case GREATER:
                 checkNumberOperands(expr.operator, left, right);
                 return (double)left > (double)right;
