@@ -26,6 +26,10 @@ ast jlox/src/com/craftinginterpreters/lox
 下位ほど優先度高（先に評価される）
 
 ```ebnf
+program     -> statement* EOF ;
+statement   -> exprStmt | printStmt ;
+exprStmt    -> expression ";" ;
+printStmt   -> "print" expression ";" ;
 expression  -> equality ;
 equality    -> comparison ( ( "!=" | "==" ) comparison )* ; // 左結合（左の演算子が先に評価される）
 comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ; // 左
