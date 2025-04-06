@@ -20,8 +20,17 @@ public class GenerateAst {
             "Literal  : Object value",
             "Unary    : Token operator, Expr right"
         ));
+
+        defineAst(outputDir, "Stmt", Arrays.asList(
+            "Expression : Expr expression",
+            "Print      : Expr expression"
+        ));
     }
 
+    // Expr / Stmt の継承（ポリモーフィズム）により，型判定のための分岐をなくす．
+    // Visitor パターンにより，呼び出し元判定のための分岐をなくす．
+    // これにより，同じデータ構造に対して，異なるコンテキストで異なる処理を行いたい場合に，データ構造と処理を分離することができる．
+    // つまり，OOP言語でありながら関数型言語的スタイルに接近することができる．
     private static void defineAst(
         String outputDir,
         String baseName,
