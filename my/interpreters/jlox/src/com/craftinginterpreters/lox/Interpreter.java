@@ -10,6 +10,11 @@ class Interpreter implements Expr.Visitor<Object> {
         }
     }
 
+    // 渡された Expr クラスに評価を委譲する
+    private Object evaluate(Expr expr) {
+        return expr.accept(this);
+    }
+
     @Override
     public Object visitLiteralExpr(Expr.Literal expr) {
         return expr.value;
@@ -111,11 +116,6 @@ class Interpreter implements Expr.Visitor<Object> {
         }
 
         return object.toString();
-    }
-
-    // 渡された Expr クラスに評価を委譲する
-    private Object evaluate(Expr expr) {
-        return expr.accept(this);
     }
 
     private void checkNumberOperands(Token operator, Object operand) {
