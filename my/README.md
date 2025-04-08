@@ -40,6 +40,7 @@ primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
 ```
 
 ※ factor -> factor ( "/" | "*" ) unary | unary ; のようにも書けるが，Parser を実装する際に再帰呼び出しが無限ループに陥るため不可
+※ 式(expression)と文(statement)の違い＝ExprクラスとStmtクラスの違い（式＝評価の結果を返す．文＝評価の結果を返さない．）
 
 ## Types
 
