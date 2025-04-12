@@ -26,7 +26,9 @@ ast jlox/src/com/craftinginterpreters/lox
 下位ほど優先度高（先に評価される）
 
 ```ebnf
-program     -> statement* EOF ;
+program     -> declaration* EOF ;
+declaration -> varDecl | statement ;
+varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
 statement   -> exprStmt | printStmt ;
 exprStmt    -> expression ";" ;
 printStmt   -> "print" expression ";" ;
@@ -36,11 +38,12 @@ comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ; // 左
 term        -> factor ( ( "-" | "+" ) factor )* ;           // 左
 factor      -> unary ( ( "/" | "*" ) unary )* ;             // 左
 unary       -> ( "-" | "!" ) unary | primary ;              // 右
-primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
 ```
 
 ※ factor -> factor ( "/" | "*" ) unary | unary ; のようにも書けるが，Parser を実装する際に再帰呼び出しが無限ループに陥るため不可
 ※ 式(expression)と文(statement)の違い＝ExprクラスとStmtクラスの違い（式＝評価の結果を返す．文＝評価の結果を返さない．）
+※ 宣言と文は使える場所が異なるので区別している（e.g. OK: if (monday) print "bagel";, NG: if (monday) var breakfast = "bagel";）
 
 ## Types
 
