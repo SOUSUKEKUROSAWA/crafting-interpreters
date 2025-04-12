@@ -13,14 +13,11 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
     }
 
+    /* --- 文（Statement） --- */
+
     // 渡された Stmt クラスに評価を委譲する
     private void execute(Stmt stmt) {
         stmt.accept(this);
-    }
-
-    // 渡された Expr クラスに評価を委譲する
-    private Object evaluate(Expr expr) {
-        return expr.accept(this);
     }
 
     // 式文は結果を棄てる
@@ -36,6 +33,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object value = evaluate(stmt.expression);
         System.out.println(stringify(value));
         return null;
+    }
+
+    /* --- 式（Expression） --- */
+
+    // 渡された Expr クラスに評価を委譲する
+    private Object evaluate(Expr expr) {
+        return expr.accept(this);
     }
 
     @Override
