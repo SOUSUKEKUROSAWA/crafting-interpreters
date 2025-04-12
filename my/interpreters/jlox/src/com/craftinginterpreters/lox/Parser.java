@@ -70,10 +70,37 @@ class Parser {
         return new Stmt.Expression(expr);
     }
 
-    // expression -> equality ;
-    // equality に解析を委譲する．
+    // expression -> assignment ;
+    // assignment に解析を委譲する．
     private Expr expression() {
-        return equality();
+        return assignment();
+    }
+
+    // assignment  -> IDENTIFIER "=" assignment | equality ;
+    // WARNING: "=" を見つけるまで，代入式かどうか（つまり，式として評価して評価結果を返すべきか，疑似式として評価して変数のストレージの場所を調べるべきか）わからない．
+    // だが，先読みはトークン１個分しかできないという問題がある．
+    // ただ，代入式の左辺値は，変数（IDENTIFIER）だろうが，インスタンスのプロパティだろうが，必ず式になるので，
+    // まずは，式（equality）として解析する．
+    // "=" に当たれば，その式が代入式であると判断し，疑似式として評価してその変数のストレージの場所を調べる．
+    private Expr assignment() {
+        Expr expr = equality();
+
+        if (match(EQUAL)) {
+            Token equals = previous();
+            Expr value = assignment();
+
+            // 代入式のノードを作る前に，代入のターゲットが何かを調べる．
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable) expr).name;
+                return new Expr.Assign(name, value);
+            }
+
+            // エラーは報告するが，throw しない（パニックモードに移行するほどではない）．
+            // e.g. a + b = c; や (a) = 3;
+            error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
     }
 
     // equality -> comparison ( ( "!=" | "==" ) comparison )* ;
@@ -168,6 +195,9 @@ class Parser {
         }
 
         // "(" expression ")"
+        // Grouping を構文木として表現する理由は，代入式の以下２つを区別するため．
+        //   a = 3; // OK.
+        //   (a) = 3; // Error.
         if (match(LEFT_PAREN)) {
             // Grouping の中身は expression に解析を委譲する（TOPに戻る）．
             Expr expr = expression();

@@ -32,7 +32,8 @@ varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
 statement   -> exprStmt | printStmt ;
 exprStmt    -> expression ";" ;
 printStmt   -> "print" expression ";" ;
-expression  -> equality ;
+expression  -> assignment ;
+assignment  -> IDENTIFIER "=" assignment | equality ;       // 右
 equality    -> comparison ( ( "!=" | "==" ) comparison )* ; // 左結合（左の演算子が先に評価される）
 comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ; // 左
 term        -> factor ( ( "-" | "+" ) factor )* ;           // 左

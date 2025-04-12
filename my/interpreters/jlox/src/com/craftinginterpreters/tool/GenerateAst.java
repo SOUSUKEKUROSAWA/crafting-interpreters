@@ -15,6 +15,9 @@ public class GenerateAst {
         String outputDir = args[0];
 
         defineAst(outputDir, "Expr", Arrays.asList(
+            // Token name は左辺値と呼ばれ，変数の代入先を表す疑似式（評価はされずにストレージの場所を調べるだけ）
+            // e.g. var a = "before"; a = "after"; のうち， a = "after"; の a は左辺値で, "before" は返さずに "before" が格納されているストレージの場所を調べるだけ 
+            "Assign   : Token name, Expr value",
             "Binary   : Expr left, Token operator, Expr right",
             "Grouping : Expr expression",
             "Literal  : Object value",
