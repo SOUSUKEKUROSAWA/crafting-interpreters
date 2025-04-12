@@ -20,4 +20,15 @@ class Environment {
 
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
+
+    // 代入
+    void assign(Token name, Object value) {
+        // define と違って，新しい変数の作成は許容しない．
+        if (values.containsKey(name.lexeme)) {
+            values.put(name.lexeme, value);
+            return;
+        }
+
+        throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
+    }
 }
