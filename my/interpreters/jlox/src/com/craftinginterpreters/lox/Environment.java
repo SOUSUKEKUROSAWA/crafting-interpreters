@@ -4,7 +4,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 class Environment {
+    final Environment enclosing; // 親スコープへの参照
     private final Map<String, Object> values = new HashMap<>();
+
+    // グローバルスコープ用
+    Environment() {
+        enclosing = null;
+    }
+
+    // ローカルスコープ用
+    Environment(Environment enclosing) {
+        this.enclosing = enclosing;
+    }
 
     void define(String name, Object value) {
         // 常に上書きする．
@@ -18,6 +29,11 @@ class Environment {
             return values.get(name.lexeme);
         }
 
+        // 親スコープを再帰的に探索する
+        if (enclosing != null) {
+            return enclosing.get(name);
+        }
+
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
@@ -26,6 +42,12 @@ class Environment {
         // define と違って，新しい変数の作成は許容しない．
         if (values.containsKey(name.lexeme)) {
             values.put(name.lexeme, value);
+            return;
+        }
+
+        // 親スコープを再帰的に探索する
+        if (enclosing != null) {
+            enclosing.assign(name, value);
             return;
         }
 
