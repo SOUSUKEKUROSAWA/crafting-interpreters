@@ -29,9 +29,10 @@ ast jlox/src/com/craftinginterpreters/lox
 program     -> declaration* EOF ;
 declaration -> varDecl | statement ;
 varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
-statement   -> exprStmt | printStmt ;
+statement   -> exprStmt | printStmt | block ;
 exprStmt    -> expression ";" ;
 printStmt   -> "print" expression ";" ;
+block       -> "{" declaration* "}" ;
 expression  -> assignment ;
 assignment  -> IDENTIFIER "=" assignment | equality ;       // 右
 equality    -> comparison ( ( "!=" | "==" ) comparison )* ; // 左結合（左の演算子が先に評価される）

@@ -49,11 +49,29 @@ class Parser {
         return new Stmt.Var(name, initializer);
     }
 
-    // statement -> exprStmt | printStmt ;
+    // statement -> exprStmt | printStmt | block ;
     private Stmt statement() {
         if (match(PRINT)) return printStatement();
 
+        if (match(LEFT_BRACE)) return new Stmt.Block(block());
+
         return expressionStatement();
+    }
+
+    // block -> "{" declaration* "}" ;
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+        }
+
+        consume(RIGHT_BRACE, "Expect '}' after block.");
+
+        // WARNING: ここで new Stmt.Block を作ると，
+        // 関数本文の解析などにこのメソッドを再利用することができなくなってしまうため，
+        // 単に文のリストを返すようにしている．
+        return statements;
     }
 
     // printStmt -> "print" expression ";" ;
