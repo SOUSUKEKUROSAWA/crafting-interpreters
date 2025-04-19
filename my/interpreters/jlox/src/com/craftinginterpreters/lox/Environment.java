@@ -26,7 +26,12 @@ class Environment {
 
     Object get(Token name) {
         if (values.containsKey(name.lexeme)) {
-            return values.get(name.lexeme);
+            Object value = values.get(name.lexeme);
+            if (value == Undefined.INSTANCE) {
+                // 宣言済みだが，値が設定されていない変数へのアクセス
+                throw new RuntimeError(name, "Unassigned variable '" + name.lexeme + "'.");
+            }
+            return value;
         }
 
         // 親スコープを再帰的に探索する
