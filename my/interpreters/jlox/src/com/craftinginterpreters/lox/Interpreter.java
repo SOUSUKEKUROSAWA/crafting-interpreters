@@ -15,6 +15,15 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
     }
 
+    void interpret(Stmt.Expression stmt) {
+        try {
+            Object value = evaluate(stmt.expression);
+            System.out.println("= " + stringify(value));
+        } catch (RuntimeError error) {
+            Lox.runtimeError(error);
+        }
+    }
+
     /* --- 文（Statement） --- */
 
     // 渡された Stmt クラスに評価を委譲する
