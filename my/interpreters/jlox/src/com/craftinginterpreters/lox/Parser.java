@@ -112,14 +112,14 @@ class Parser {
         return assignment();
     }
 
-    // assignment  -> IDENTIFIER "=" assignment | equality ;
+    // assignment  -> IDENTIFIER "=" assignment | logic_or ;
     // WARNING: "=" を見つけるまで，代入式かどうか（つまり，式として評価して評価結果を返すべきか，疑似式として評価して変数のストレージの場所を調べるべきか）わからない．
     // だが，先読みはトークン１個分しかできないという問題がある．
     // ただ，代入式の左辺値は，変数（IDENTIFIER）だろうが，インスタンスのプロパティだろうが，必ず式になるので，
-    // まずは，式（equality）として解析する．
+    // まずは，式（logic_or）として解析する．
     // "=" に当たれば，その式が代入式であると判断し，疑似式として評価してその変数のストレージの場所を調べる．
     private Expr assignment() {
-        Expr expr = equality();
+        Expr expr = or();
 
         if (match(EQUAL)) {
             Token equals = previous();
@@ -134,6 +134,36 @@ class Parser {
             // エラーは報告するが，throw しない（パニックモードに移行するほどではない）．
             // e.g. a + b = c; や (a) = 3;
             error(equals, "Invalid assignment target.");
+        }
+
+        return expr;
+    }
+
+    // logic_or -> logic_and ( "or" logic_and )* ;
+    private Expr or() {
+        // logic_and
+        Expr expr = and();
+
+        // ( "or" logic_and )*
+        while (match(OR)) {
+            Token operator = previous();
+            Expr right = and();
+            expr = new Expr.Logical(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    // logic_and -> equality ( "and" equality )* ;
+    private Expr and() {
+        // equality
+        Expr expr = equality();
+
+        // ( "and" equality )*
+        while (match(AND)) {
+            Token operator = previous();
+            Expr right = equality();
+            expr = new Expr.Logical(expr, operator, right);
         }
 
         return expr;

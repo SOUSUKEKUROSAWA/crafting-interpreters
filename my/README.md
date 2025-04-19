@@ -35,8 +35,10 @@ ifStmt      -> "if" "(" expression ")" statement ( "else" statement )? ;
 printStmt   -> "print" expression ";" ;
 block       -> "{" declaration* "}" ;
 expression  -> assignment ;
-assignment  -> IDENTIFIER "=" assignment | equality ;       // 右
-equality    -> comparison ( ( "!=" | "==" ) comparison )* ; // 左結合（左の演算子が先に評価される）
+assignment  -> IDENTIFIER "=" assignment | logic_or ;       // 右
+logic_or    -> logic_and ( "or" logic_and )* ;              // 左
+logic_and   -> equality ( "and" equality )* ;               // 左
+equality    -> comparison ( ( "!=" | "==" ) comparison )* ; // 左結合
 comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ; // 左
 term        -> factor ( ( "-" | "+" ) factor )* ;           // 左
 factor      -> unary ( ( "/" | "*" ) unary )* ;             // 左
@@ -44,6 +46,7 @@ unary       -> ( "-" | "!" ) unary | primary ;              // 右
 primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
 ```
 
+※ 左結合: 左オペランドが先に評価される
 ※ factor -> factor ( "/" | "*" ) unary | unary ; のようにも書けるが，Parser を実装する際に再帰呼び出しが無限ループに陥るため不可
 ※ 式(expression)と文(statement)の違い＝ExprクラスとStmtクラスの違い（式＝評価の結果を返す．文＝評価の結果を返さない．）
 ※ 宣言と文は使える場所が異なるので区別している（e.g. OK: if (monday) print "bagel";, NG: if (monday) var breakfast = "bagel";）
