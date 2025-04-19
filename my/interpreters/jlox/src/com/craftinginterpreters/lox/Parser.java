@@ -49,13 +49,31 @@ class Parser {
         return new Stmt.Var(name, initializer);
     }
 
-    // statement -> exprStmt | printStmt | block ;
+    // statement -> exprStmt | ifStmt | printStmt | block ;
     private Stmt statement() {
+        if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
-
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
         return expressionStatement();
+    }
+
+    // ifStmt -> "if" "(" expression ")" statement ( "else" statement )? ;
+    private Stmt ifStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'if'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after if condition.");
+
+        Stmt thenBranch = statement();
+
+        // WARNING: else は最も近い先行する if に結びつく．
+        // e.g. if (a) if (b) c; else d; // a = true, b = false の場合，d が実行されることを意味する．
+        Stmt elseBranch = null;
+        if (match(ELSE)) {
+            elseBranch = statement();
+        }
+
+        return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
     // block -> "{" declaration* "}" ;
