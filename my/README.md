@@ -29,13 +29,14 @@ ast jlox/src/com/craftinginterpreters/lox
 program     -> declaration* EOF ;
 declaration -> varDecl | statement ;
 varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
-statement   -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block ;
+statement   -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block | breakStmt ;
 exprStmt    -> expression ";" ;
 forStmt     -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
 ifStmt      -> "if" "(" expression ")" statement ( "else" statement )? ;
 printStmt   -> "print" expression ";" ;
 whileStmt   -> "while" "(" expression ")" statement ;
 block       -> "{" declaration* "}" ;
+breakStmt   -> "break" ";" ;
 expression  -> assignment ;
 assignment  -> IDENTIFIER "=" assignment | logic_or ;       // 右
 logic_or    -> logic_and ( "or" logic_and )* ;              // 左

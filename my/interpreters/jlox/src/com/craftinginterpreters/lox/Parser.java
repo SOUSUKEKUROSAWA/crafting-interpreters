@@ -11,6 +11,7 @@ class Parser {
 
     private final List<Token> tokens;
     private int current = 0;
+    private int loopDepth = 0;
 
     Parser(List<Token> tokens) {
         this.tokens = tokens;
@@ -50,13 +51,14 @@ class Parser {
         return new Stmt.Var(name, initializer);
     }
 
-    // statement -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block ;
+    // statement -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block | breakStmt ;
     private Stmt statement() {
         if (match(FOR)) return forStatement();
         if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
         if (match(WHILE)) return whileStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
+        if (match(BREAK)) return breakStatement();
 
         return expressionStatement();
     }
@@ -90,35 +92,40 @@ class Parser {
         consume(RIGHT_PAREN, "Expect ')' after for clauses.");
 
         // statement
-        Stmt body = statement();
+        try {
+            loopDepth++;
+            Stmt body = statement();
+    
+            /* --- for 文を while 文に desugaring する --- */
+    
+            // for (initializer; condition; increment) body;
+            // ↓
+            // {
+            //     initializer;
+            //     while (condition) {
+            //         body;
+            //         increment;
+            //     }
+            // }
+    
+            if (increment != null) {
+                body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
+            }
+    
+            if (condition == null) {
+                condition = new Expr.Literal(true);
+            }
+    
+            body = new Stmt.While(condition, body);
+    
+            if (initializer != null) {
+                body = new Stmt.Block(Arrays.asList(initializer, body));
+            }
 
-        /* --- for 文を while 文に desugaring する --- */
-
-        // for (initializer; condition; increment) body;
-        // ↓
-        // {
-        //     initializer;
-        //     while (condition) {
-        //         body;
-        //         increment;
-        //     }
-        // }
-
-        if (increment != null) {
-            body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
+            return body;
+        } finally {
+            loopDepth--;
         }
-
-        if (condition == null) {
-            condition = new Expr.Literal(true);
-        }
-
-        body = new Stmt.While(condition, body);
-
-        if (initializer != null) {
-            body = new Stmt.Block(Arrays.asList(initializer, body));
-        }
-
-        return body;
     }
 
     // ifStmt -> "if" "(" expression ")" statement ( "else" statement )? ;
@@ -145,9 +152,13 @@ class Parser {
         Expr condition = expression();
         consume(RIGHT_PAREN, "Expect ')' after while condition.");
 
-        Stmt body = statement();
-
-        return new Stmt.While(condition, body);
+        try {
+            loopDepth++;
+            Stmt body = statement();
+            return new Stmt.While(condition, body);
+        } finally {
+            loopDepth--;
+        }
     }
 
     // block -> "{" declaration* "}" ;
@@ -164,6 +175,19 @@ class Parser {
         // 関数本文の解析などにこのメソッドを再利用することができなくなってしまうため，
         // 単に文のリストを返すようにしている．
         return statements;
+    }
+
+    // breakStmt -> "break" ";" ;
+    private Stmt breakStatement() {
+        Token keyword = previous();
+        consume(SEMICOLON, "Expect ';' after 'break'.");
+
+        // break 文を囲むループがない場合は，構文エラーを報告する．
+        if (loopDepth == 0) {
+            error(keyword, "'break' must be inside a loop.");
+        }
+
+        return new Stmt.Break(keyword);
     }
 
     // printStmt -> "print" expression ";" ;
