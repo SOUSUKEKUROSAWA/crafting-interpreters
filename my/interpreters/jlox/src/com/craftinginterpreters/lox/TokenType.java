@@ -13,7 +13,7 @@ enum TokenType {
     SEMICOLON,
     SLASH,
     STAR,
-    
+
     // One or two character tokens.
     BANG,
     BANG_EQUAL,
@@ -23,12 +23,12 @@ enum TokenType {
     GREATER_EQUAL,
     LESS,
     LESS_EQUAL,
-    
+
     // Literals.
     IDENTIFIER,
     NUMBER,
     STRING,
-    
+
     // Keywords.
     AND,
     CLASS,
@@ -46,6 +46,6 @@ enum TokenType {
     TRUE,
     VAR,
     WHILE,
-    
+
     EOF
 }

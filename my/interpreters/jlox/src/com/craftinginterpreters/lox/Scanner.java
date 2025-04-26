@@ -81,13 +81,13 @@ class Scanner {
                     addToken(SLASH);
                 }
                 break;
-            
+
             // 空白文字
             case ' ':
             case '\r':
             case '\t':
                 break;
-            
+
             // 改行
             case '\n':
                 line++;
