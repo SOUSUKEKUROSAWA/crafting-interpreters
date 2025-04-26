@@ -205,7 +205,7 @@ class Parser {
                 return new Expr.Assign(name, value);
             }
 
-            // エラーは報告するが，throw しない（パニックモードに移行するほどではない）．
+            // エラーは報告するが，Parse は続行可能なので，throw はしない．
             // e.g. a + b = c; や (a) = 3;
             error(equals, "Invalid assignment target.");
         }
@@ -341,6 +341,7 @@ class Parser {
         if (!check(RIGHT_PAREN)) {
             do {
                 if (arguments.size() >= 255) {
+                    // エラーは報告するが，Parse は続行可能なので，throw はしない．
                     error(peek(), "Cannot have more than 255 arguments.");
                 }
                 arguments.add(expression());
