@@ -44,7 +44,9 @@ equality    -> comparison ( ( "!=" | "==" ) comparison )* ; // 左結合
 comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ; // 左
 term        -> factor ( ( "-" | "+" ) factor )* ;           // 左
 factor      -> unary ( ( "/" | "*" ) unary )* ;             // 左
-unary       -> ( "-" | "!" ) unary | primary ;              // 右
+unary       -> ( "-" | "!" ) unary | call ;                 // 右
+call        -> primary ( "(" arguments? ")" )* ;            // 左
+arguments   -> expression ( "," expression )* ;             // 左
 primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
 ```
 
