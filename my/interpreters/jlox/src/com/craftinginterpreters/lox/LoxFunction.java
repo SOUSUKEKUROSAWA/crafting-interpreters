@@ -25,7 +25,12 @@ class LoxFunction implements LoxCallable {
         }
 
         // 用意した環境の中で，関数の本体を実行する
-        interpreter.executeBlock(declaration.body, environment);
+        try {
+            interpreter.executeBlock(declaration.body, environment);
+        } catch (Return returnValue) {
+            // Return 例外をキャッチしたら，その値を返り値とする．
+            return returnValue.value;
+        }
         return null;
     }
 
