@@ -13,6 +13,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         this.interpreter = interpreter;
     }
 
+    // Stack を使って，ブロック単位でスコープを管理する
     @Override
     public Void visitBlockStmt(Stmt.Block stmt) {
         beginScope();
@@ -43,6 +44,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         scopes.pop();
     }
 
+    // 現在最も内側にあるスコープに変数を追加する
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
         declare(stmt.name);
