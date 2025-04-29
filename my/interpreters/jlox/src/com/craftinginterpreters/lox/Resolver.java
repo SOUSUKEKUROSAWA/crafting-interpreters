@@ -31,11 +31,36 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         stmt.accept(this);
     }
 
+    private Void resolve(Expr expr) {
+        expr.accept(this);
+    }
+
     private Void beginScope() {
         scopes.push(new HashMap<String, Boolean>());
     }
 
     private Void endScope() {
         scopes.pop();
+    }
+
+    @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        declare(stmt.name);
+        if (stmt.initializer != null) {
+            resolve(stmt.initializer);
+        }
+        define(stmt.name);
+        return null;
+    }
+
+    private Void declare(Token name) {
+        if (scopes.isEmpty()) return null;
+        Map<String, Boolean> scope = scopes.peek();
+        scope.put(name.lexeme, false); // false: 宣言されたが初期化されていない
+    }
+
+    private Void define(Token name) {
+        if (scopes.isEmpty()) return null;
+        scopes.peek().put(name.lexeme, true); // true: 宣言されて初期化もされた
     }
 }
