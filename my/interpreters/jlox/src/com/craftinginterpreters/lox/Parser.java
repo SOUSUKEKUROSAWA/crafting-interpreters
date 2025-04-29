@@ -29,8 +29,11 @@ class Parser {
     // declaration -> funDecl | varDecl | statement ;
     private Stmt declaration() {
         try {
-            // funDecl -> "fun" function ;
-            if (match(FUN)) return function("function");
+            if (check(FUN) && checkNext(IDENTIFIER)) {
+                // funDecl -> "fun" function ;
+                consume(FUN, null); // check の時点で FUN が存在することは確実
+                return function("function");
+            }
             if (match(VAR)) return varDeclaration();
             return statement();
         } catch (ParseError error) {
@@ -39,12 +42,15 @@ class Parser {
         }
     }
 
-    // function -> IDENTIFIER "(" parameters? ")" block ;
+    // function -> IDENTIFIER functionBody ;
     // NOTE: kind によって，関数 (function) かメソッド (method) かを判定する．
     private Stmt.Function function(String kind) {
-        // IDENTIFIER
         Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+        return new Stmt.Function(name, functionBody(kind));
+    }
 
+    // functionBody -> "(" parameters? ")" block ;
+    private Expr.Function functionBody(String kind) {
         // "("
         consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
 
@@ -65,8 +71,7 @@ class Parser {
         // block
         consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
         List<Stmt> body = block();
-
-        return new Stmt.Function(name, parameters, body);
+        return new Expr.Function(parameters, body);
     }
 
     // varDecl -> "var" IDENTIFIER ( "=" expression )? ";" ;
@@ -400,7 +405,7 @@ class Parser {
         return new Expr.Call(callee, paren, arguments);
     }
 
-    // primary -> NUMBER | STRING | "false" | "true" | "nil" | "(" expression ")" | IDENTIFIER ;
+    // primary -> NUMBER | STRING | "false" | "true" | "nil" | "(" expression ")" | IDENTIFIER | lambda ;
     private Expr primary() {
         if (match(FALSE)) return new Expr.Literal(false);
         if (match(TRUE)) return new Expr.Literal(true);
@@ -425,6 +430,9 @@ class Parser {
             return new Expr.Grouping(expr);
         }
 
+        // lambda -> "fun" functionBody
+        if (match(FUN)) return functionBody("function");
+
         throw error(peek(), "Expect expression.");
     }
 
@@ -448,6 +456,12 @@ class Parser {
     private boolean check(TokenType type) {
         if (isAtEnd()) return false;
         return peek().type == type;
+    }
+
+    private boolean checkNext(TokenType type) {
+        if (isAtEnd()) return false;
+        if (tokens.get(current + 1).type == EOF) return false;
+        return tokens.get(current + 1).type == type;
     }
 
     private Token advance() {

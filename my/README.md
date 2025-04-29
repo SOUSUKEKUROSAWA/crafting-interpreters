@@ -28,8 +28,9 @@ ast jlox/src/com/craftinginterpreters/lox
 ```ebnf
 program     -> declaration* EOF ;
 declaration -> funDecl | varDecl | statement ;
-funDecl     -> "fun" function ;
-function    -> IDENTIFIER "(" parameters? ")" block ;
+funDecl     -> "fun" ( function | functionBody ) ;
+function    -> IDENTIFIER functionBody ;
+functionBody-> "(" parameters? ")" block ;
 parameters  -> IDENTIFIER ( "," IDENTIFIER )* ;
 varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
 statement   -> exprStmt | forStmt | ifStmt | printStmt | returnStmt | whileStmt | block ;
@@ -51,7 +52,8 @@ factor      -> unary ( ( "/" | "*" ) unary )* ;             // 左
 unary       -> ( "-" | "!" ) unary | call ;                 // 右
 call        -> primary ( "(" arguments? ")" )* ;            // 左
 arguments   -> expression ( "," expression )* ;             // 左
-primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
+primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER | lambda ;
+lambda      -> "fun" functionBody ;
 ```
 
 ※ 左結合: 左オペランドが先に評価される
