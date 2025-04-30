@@ -102,4 +102,25 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         resolveLocal(expr, expr.name);
         return null;
     }
+
+    @Override
+    public Void visitFunctionStmt(Stmt.Function stmt) {
+        declare(stmt.name);
+        define(stmt.name);
+        // NOTE: 関数本文から自身を呼び出せる（再帰を実現できる）ようにするため，事前に関数名を declare & define する．
+        resolveFunction(stmt);
+        return null;
+    }
+
+    private void resolveFunction(Stmt.Function function) {
+        beginScope();
+        for (Token param : function.params) {
+            declare(param);
+            define(param);
+        }
+
+        // NOTE: 関数宣言のタイミングで，本文の解決も行う（関数呼び出し時ではない）．
+        resolve(function.body);
+        endScope();
+    }
 }
