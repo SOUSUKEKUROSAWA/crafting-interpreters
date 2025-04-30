@@ -45,6 +45,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     // 現在最も内側にあるスコープに変数を追加する
+    /*
+     * WARNING: 以下のようなケースをエラーにするために，宣言（declare）と定義（define）に分けている．
+     * var a = "outer";
+     * {
+     *   var a = a; // 解釈が分かれてしまうため，エラーにする．
+     * }
+     */
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
         declare(stmt.name);
@@ -64,5 +71,28 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private Void define(Token name) {
         if (scopes.isEmpty()) return null;
         scopes.peek().put(name.lexeme, true); // true: 宣言されて初期化もされた
+    }
+
+    @Override
+    public Void visitVariableExpr(Expr.Variable expr) {
+        if (!scopes.isEmpty() && scopes.peek().get(expr.name.lexeme) == Boolean.FALSE) {
+            Lox.error(expr.name, "Cannot read local variable in its own initializer.");
+        }
+
+        resolveLocal(expr, expr.name);
+        return null;
+    }
+
+    private Void resolveLocal(Expr expr, Token name) {
+        // スコープの内から外側へ向かって変数を探索する．
+        for (int i = scopes.size() - 1; i >= 0; i--) {
+            if (scopes.get(i).containsKey(name.lexeme)) {
+                interpreter.resolve(
+                    expr,
+                    scopes.size() - 1 - i // 最も内側のスコープから，変数を発見するまでに巡ったスコープの数
+                );
+                return;
+            }
+        }
     }
 }
