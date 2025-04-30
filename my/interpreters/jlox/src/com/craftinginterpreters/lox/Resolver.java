@@ -22,25 +22,25 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         return null;
     }
 
-    private Void resolve(List<Stmt> statements) {
+    private void resolve(List<Stmt> statements) {
         for (Stmt statement : statements) {
             resolve(statement);
         }
     }
 
-    private Void resolve(Stmt stmt) {
+    private void resolve(Stmt stmt) {
         stmt.accept(this);
     }
 
-    private Void resolve(Expr expr) {
+    private void resolve(Expr expr) {
         expr.accept(this);
     }
 
-    private Void beginScope() {
+    private void beginScope() {
         scopes.push(new HashMap<String, Boolean>());
     }
 
-    private Void endScope() {
+    private void endScope() {
         scopes.pop();
     }
 
@@ -62,14 +62,14 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         return null;
     }
 
-    private Void declare(Token name) {
-        if (scopes.isEmpty()) return null;
+    private void declare(Token name) {
+        if (scopes.isEmpty()) return;
         Map<String, Boolean> scope = scopes.peek();
         scope.put(name.lexeme, false); // false: 宣言されたが初期化されていない
     }
 
-    private Void define(Token name) {
-        if (scopes.isEmpty()) return null;
+    private void define(Token name) {
+        if (scopes.isEmpty()) return;
         scopes.peek().put(name.lexeme, true); // true: 宣言されて初期化もされた
     }
 
@@ -83,7 +83,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         return null;
     }
 
-    private Void resolveLocal(Expr expr, Token name) {
+    private void resolveLocal(Expr expr, Token name) {
         // スコープの内から外側へ向かって変数を探索する．
         for (int i = scopes.size() - 1; i >= 0; i--) {
             if (scopes.get(i).containsKey(name.lexeme)) {
