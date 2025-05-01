@@ -19,7 +19,6 @@ class LoxFunction implements LoxCallable {
     @Override
     public Object call(Interpreter interpreter, List<Object> arguments) {
         // NOTE: パラメータをカプセル化するために，関数ごとに新しいローカル環境を用意している．
-        // WARNING: 呼び出し時に環境が固定されるので，関数が宣言された後に宣言された変数なども環境に紛れ込んでしまう可能性があることに注意．
         Environment environment = new Environment(closure);
 
         // パラメータと引数を結び付けて，環境に登録する
