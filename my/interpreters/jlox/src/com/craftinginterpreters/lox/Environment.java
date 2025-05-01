@@ -37,6 +37,20 @@ class Environment {
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
+    Object getAt(int distance, String name) {
+        // NOTE: 変数が存在するかどうかは，Resolver で解決済みなのでチェックしなくてよい．
+        return ancestor(distance).values.get(name);
+    }
+
+    // 指定された回数分だけ親スコープを遡った環境を返す
+    Environment ancestor(int distance) {
+        Environment environment = this;
+        for (int i = 0; i < distance; i++) {
+            environment = environment.enclosing;
+        }
+        return environment;
+    }
+
     // 代入
     void assign(Token name, Object value) {
         // define と違って，新しい変数の作成は許容しない．
