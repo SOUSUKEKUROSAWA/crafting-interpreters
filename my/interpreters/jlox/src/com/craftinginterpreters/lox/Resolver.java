@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+// NOTE: 変数を訪問するたびに，
+// 現在のスコープとその変数が定義されたスコープとの間にあるスコープ数をインタプリタに知らせる．
 class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private final Interpreter interpreter;
     private final Stack<Map<String, Boolean>> scopes = new Stack<>();

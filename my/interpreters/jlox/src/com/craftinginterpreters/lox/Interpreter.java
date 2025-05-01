@@ -1,11 +1,14 @@
 package com.craftinginterpreters.lox;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     final Environment globals = new Environment(); // 最も外側のグローバル環境への固定参照
     private Environment environment = globals;     // 現在の環境の追跡用
+    private final Map<Expr, Integer> locals = new HashMap<>(); // 現在の環境から変数の値を参照できる環境との間にある環境数の保存用
 
     Interpreter() {
         // 組み込み関数 clock を定義
@@ -56,6 +59,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             // Block の実行が終わったら，前のスコープに戻す．
             this.environment = previous;
         }
+    }
+
+    void resolve(Expr expr, int depth) {
+        locals.put(expr, depth);
     }
 
     @Override
