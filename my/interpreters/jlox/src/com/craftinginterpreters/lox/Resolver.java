@@ -10,6 +10,12 @@ import java.util.Stack;
 class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private final Interpreter interpreter;
     private final Stack<Map<String, Boolean>> scopes = new Stack<>();
+    private FunctionType currentFunction = FunctionType.NONE;
+
+    private enum FunctionType {
+        NONE,
+        FUNCTION
+    }
 
     Resolver(Interpreter interpreter) {
         this.interpreter = interpreter;
@@ -116,11 +122,14 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         declare(stmt.name);
         define(stmt.name);
         // NOTE: 関数本文から自身を呼び出せる（再帰を実現できる）ようにするため，事前に関数名を declare & define する．
-        resolveFunction(stmt);
+        resolveFunction(stmt, FunctionType.FUNCTION);
         return null;
     }
 
-    private void resolveFunction(Stmt.Function function) {
+    private void resolveFunction(Stmt.Function function, FunctionType type) {
+        FunctionType enclosingFunction = currentFunction;
+        currentFunction = type;
+
         beginScope();
         for (Token param : function.params) {
             declare(param);
@@ -130,6 +139,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         // NOTE: 関数宣言のタイミングで，本文の解決も行う（関数呼び出し時ではない）．
         resolve(function.body);
         endScope();
+
+        currentFunction = enclosingFunction;
     }
 
     @Override
@@ -158,6 +169,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitReturnStmt(Stmt.Return stmt) {
+        if (currentFunction == FunctionType.NONE) {
+            Lox.error(stmt.keyword, "Cannot return from top-level code.");
+        }
+
         if (stmt.value != null) {
             resolve(stmt.value);
         }
