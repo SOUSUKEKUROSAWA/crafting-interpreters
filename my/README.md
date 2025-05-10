@@ -42,16 +42,16 @@ returnStmt  -> "return" expression? ";" ;
 whileStmt   -> "while" "(" expression ")" statement ;
 block       -> "{" declaration* "}" ;
 expression  -> assignment ;
-assignment  -> IDENTIFIER "=" assignment | logic_or ;       // 右
-logic_or    -> logic_and ( "or" logic_and )* ;              // 左
-logic_and   -> equality ( "and" equality )* ;               // 左
-equality    -> comparison ( ( "!=" | "==" ) comparison )* ; // 左結合
-comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ; // 左
-term        -> factor ( ( "-" | "+" ) factor )* ;           // 左
-factor      -> unary ( ( "/" | "*" ) unary )* ;             // 左
-unary       -> ( "-" | "!" ) unary | call ;                 // 右
-call        -> primary ( "(" arguments? ")" )* ;            // 左
-arguments   -> expression ( "," expression )* ;             // 左
+assignment  -> IDENTIFIER "=" assignment | logic_or ;               // 右
+logic_or    -> logic_and ( "or" logic_and )* ;                      // 左
+logic_and   -> equality ( "and" equality )* ;                       // 左
+equality    -> comparison ( ( "!=" | "==" ) comparison )* ;         // 左結合
+comparison  -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;         // 左
+term        -> factor ( ( "-" | "+" ) factor )* ;                   // 左
+factor      -> unary ( ( "/" | "*" ) unary )* ;                     // 左
+unary       -> ( "-" | "!" ) unary | call ;                         // 右
+call        -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;   // 左
+arguments   -> expression ( "," expression )* ;                     // 左
 primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
 ```
 
