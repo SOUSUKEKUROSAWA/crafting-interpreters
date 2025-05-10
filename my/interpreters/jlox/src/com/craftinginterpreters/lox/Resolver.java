@@ -22,7 +22,17 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         USED        // 宣言済み，初期化済み，使用済み
     }
 
-    private final Stack<Map<String, VariableState>> scopes = new Stack<>();
+    private static class VariableInfo {
+        final Token token;
+        final VariableState state;
+
+        VariableInfo(Token token, VariableState state) {
+            this.token = token;
+            this.state = state;
+        }
+    }
+
+    private final Stack<Map<String, VariableInfo>> scopes = new Stack<>();
 
     Resolver(Interpreter interpreter) {
         this.interpreter = interpreter;
@@ -52,15 +62,15 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     private void beginScope() {
-        scopes.push(new HashMap<String, VariableState>());
+        scopes.push(new HashMap<String, VariableInfo>());
     }
 
     private void endScope() {
         // 未使用のローカル変数がある場合はエラーを出力する
-        Map<String, VariableState> scope = scopes.peek();
-        for (Map.Entry<String, VariableState> entry : scope.entrySet()) {
-            if (entry.getValue() == VariableState.DEFINED) {
-                Lox.warning("Variable '" + entry.getKey() + "' is declared but never used.");
+        Map<String, VariableInfo> scope = scopes.peek();
+        for (Map.Entry<String, VariableInfo> entry : scope.entrySet()) {
+            if (entry.getValue().state == VariableState.DEFINED) {
+                Lox.warning(entry.getValue().token, "Variable '" + entry.getKey() + "' is declared but never used.");
             }
         }
 
@@ -88,24 +98,27 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private void declare(Token name) {
         if (scopes.isEmpty()) return;
 
-        Map<String, VariableState> scope = scopes.peek();
+        Map<String, VariableInfo> scope = scopes.peek();
 
         if (scope.containsKey(name.lexeme)) {
             Lox.error(name, "Already a variable with this name in this scope.");
         }
 
-        scope.put(name.lexeme, VariableState.DECLARED);
+        scope.put(name.lexeme, new VariableInfo(name, VariableState.DECLARED));
     }
 
     private void define(Token name) {
         if (scopes.isEmpty()) return;
-        scopes.peek().put(name.lexeme, VariableState.DEFINED);
+        scopes.peek().put(name.lexeme, new VariableInfo(name, VariableState.DEFINED));
     }
 
     @Override
     public Void visitVariableExpr(Expr.Variable expr) {
-        if (!scopes.isEmpty() && scopes.peek().get(expr.name.lexeme) == VariableState.DECLARED) {
-            Lox.error(expr.name, "Cannot read local variable in its own initializer.");
+        if (!scopes.isEmpty()) {
+            VariableInfo info = scopes.peek().get(expr.name.lexeme);
+            if (info != null && info.state == VariableState.DECLARED) {
+                Lox.error(expr.name, "Cannot read local variable in its own initializer.");
+            }
         }
 
         resolveLocal(expr, expr.name);
@@ -120,7 +133,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
                     expr,
                     scopes.size() - 1 - i // 最も内側のスコープから，変数を発見するまでに巡ったスコープの数
                 );
-                scopes.get(i).put(name.lexeme, VariableState.USED);
+                scopes.get(i).put(name.lexeme, new VariableInfo(name, VariableState.USED));
                 return;
             }
         }
