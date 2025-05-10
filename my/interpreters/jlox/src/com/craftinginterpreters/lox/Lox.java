@@ -64,8 +64,21 @@ public class Lox {
         interpreter.interpret(statements);
     }
 
+    // static void warning(Token token, String message) {
+    //     if (token.type == TokenType.EOF) {
+    //         report(token.line, " at end", message);
+    //     } else {
+    //         report(token.line, " at '" + token.lexeme + "'", message);
+    //     }
+    //     // 警告なので hadError フラグは立てない
+    // }
+    static void warning(String message) {
+        System.err.println("Warning: " + message);
+    }
+
     static void error(int line, String message) {
         report(line, "", message);
+        hadError = true;
     }
 
     static void error(Token token, String message) {
@@ -74,6 +87,7 @@ public class Lox {
         } else {
             report(token.line, " at '" + token.lexeme + "'", message);
         }
+        hadError = true;
     }
 
     static void runtimeError(RuntimeError error) {
@@ -85,6 +99,5 @@ public class Lox {
         System.err.println(
             "[line " + line + "] Error" + where + ": " + message
         );
-        hadError = true; // エラーが報告されたタイミングでフラグを立てる
     }
 }
