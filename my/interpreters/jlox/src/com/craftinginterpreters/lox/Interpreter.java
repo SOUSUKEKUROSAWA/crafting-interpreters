@@ -71,6 +71,16 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return null;
     }
 
+    @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        // NOTE: クラスメソッドの内部からクラス自身を参照できるようにするために，
+        // 先にクラス名を環境に登録しておく．
+        environment.define(stmt.name.lexeme, null);
+        LoxClass klass = new LoxClass(stmt.name.lexeme);
+        environment.assign(stmt.name, klass);
+        return null;
+    }
+
     // 式文は結果を棄てる
     // e.g. 1 + 2;
     @Override

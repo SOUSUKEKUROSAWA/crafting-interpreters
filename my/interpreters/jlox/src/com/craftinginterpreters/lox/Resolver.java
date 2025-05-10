@@ -52,6 +52,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         scopes.pop();
     }
 
+    @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        declare(stmt.name);
+        define(stmt.name);
+        return null;
+    }
+
     // 現在最も内側にあるスコープに変数を追加する
     /*
      * WARNING: 以下のようなケースをエラーにするために，宣言（declare）と定義（define）に分けている．

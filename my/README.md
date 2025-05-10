@@ -27,7 +27,8 @@ ast jlox/src/com/craftinginterpreters/lox
 
 ```ebnf
 program     -> declaration* EOF ;
-declaration -> funDecl | varDecl | statement ;
+declaration -> classDecl | funDecl | varDecl | statement ;
+classDecl   -> "class" IDENTIFIER "{" function* "}" ;
 funDecl     -> "fun" function ;
 function    -> IDENTIFIER "(" parameters? ")" block ;
 parameters  -> IDENTIFIER ( "," IDENTIFIER )* ;
