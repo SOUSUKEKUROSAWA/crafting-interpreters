@@ -3,11 +3,18 @@
 echo "Compiling Java files..."
 # WARNING: パッケージ名を正しく解決できるディレクトリまで移動しないとエラーになる
 cd /app/src/jlox/src
-for file in $(find . -name "*.java"); do
+if [ -n "$CHANGED_FILES" ]; then
+  echo "Changed files detected. Compiling only changed files..."
+  IFS=$'\n' # WARNING: 空白を含むパスを正しく処理するために、IFSを改行に設定
+  for file in $CHANGED_FILES; do
   # WARNING: 日本語コメントを含むので UTF-8 でコンパイルしないとエラーになる
   javac -encoding UTF-8 -d /app/src/jlox/bin $file
   echo "Compiled: $file"
 done
+  unset IFS
+else
+  echo "No changed files detected. Skipping compilation."
+fi
 
 # TODO: 必要に応じてビルド手順を追記していく
 
