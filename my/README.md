@@ -42,7 +42,7 @@ returnStmt  -> "return" expression? ";" ;
 whileStmt   -> "while" "(" expression ")" statement ;
 block       -> "{" declaration* "}" ;
 expression  -> assignment ;
-assignment  -> IDENTIFIER "=" assignment | logic_or ;               // 右
+assignment  -> ( call "." )? IDENTIFIER "=" assignment | logic_or ; // 右
 logic_or    -> logic_and ( "or" logic_and )* ;                      // 左
 logic_and   -> equality ( "and" equality )* ;                       // 左
 equality    -> comparison ( ( "!=" | "==" ) comparison )* ;         // 左結合

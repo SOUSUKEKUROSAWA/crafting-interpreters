@@ -253,10 +253,10 @@ class Parser {
         return assignment();
     }
 
-    // assignment  -> IDENTIFIER "=" assignment | logic_or ;
+    // assignment  -> ( call "." )? IDENTIFIER "=" assignment | logic_or ;
     // WARNING: "=" を見つけるまで，代入式かどうか（つまり，式として評価して評価結果を返すべきか，疑似式として評価して変数のストレージの場所を調べるべきか）わからない．
     // だが，先読みはトークン１個分しかできないという問題がある．
-    // ただ，代入式の左辺値は，変数（IDENTIFIER）だろうが，インスタンスのプロパティだろうが，必ず式になるので，
+    // ただ，代入式の左辺値は，変数（IDENTIFIER）だろうが，インスタンスのプロパティ（call.IDENTIFIER）だろうが，必ず式になるので，
     // まずは，式（logic_or）として解析する．
     // "=" に当たれば，その式が代入式であると判断し，疑似式として評価してその変数のストレージの場所を調べる．
     private Expr assignment() {
@@ -267,9 +267,13 @@ class Parser {
             Expr value = assignment();
 
             // 代入式のノードを作る前に，代入のターゲットが何かを調べる．
-            if (expr instanceof Expr.Variable) {
+            if (expr instanceof Expr.Variable) { // 変数への代入
                 Token name = ((Expr.Variable) expr).name;
                 return new Expr.Assign(name, value);
+            } else if (expr instanceof Expr.Get) { // インスタンスのプロパティへの代入
+                Expr.Get get = (Expr.Get) expr;
+                System.out.println(get.name.lexeme);
+                return new Expr.Set(get.object, get.name, value);
             }
 
             // エラーは報告するが，Parse は続行可能なので，throw はしない．
