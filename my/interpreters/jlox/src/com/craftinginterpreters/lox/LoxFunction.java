@@ -40,4 +40,12 @@ class LoxFunction implements LoxCallable {
     public String toString() {
         return "<fn " + declaration.name.lexeme + ">";
     }
+
+    // メソッドのクロージャの内側にネストした新しい環境を作成し，
+    // そこに this を束縛する．
+    LoxFunction bind(LoxInstance instance) {
+        Environment environment = new Environment(closure);
+        environment.define("this", instance);
+        return new LoxFunction(declaration, environment);
+    }
 }
