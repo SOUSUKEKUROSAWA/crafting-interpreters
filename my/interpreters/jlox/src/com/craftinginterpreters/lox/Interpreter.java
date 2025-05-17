@@ -76,7 +76,14 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         // NOTE: クラスメソッドの内部からクラス自身を参照できるようにするために，
         // 先にクラス名を環境に登録しておく．
         environment.define(stmt.name.lexeme, null);
-        LoxClass klass = new LoxClass(stmt.name.lexeme);
+
+        Map<String, LoxFunction> methods = new HashMap<>();
+        for (Stmt.Function method : stmt.methods) {
+            LoxFunction function = new LoxFunction(method, environment);
+            methods.put(method.name.lexeme, function);
+        }
+
+        LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
         environment.assign(stmt.name, klass);
         return null;
     }
