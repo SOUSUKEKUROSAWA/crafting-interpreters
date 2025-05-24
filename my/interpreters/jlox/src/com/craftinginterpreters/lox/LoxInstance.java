@@ -17,6 +17,8 @@ class LoxInstance {
             return fields.get(name.lexeme);
         }
 
+        // メソッドをダイレクトにコールする場合（e.g. foo.bar();）でも，まず bar を 解釈するために，この処理を通る．
+        // つまり，this は必ず bind される．
         LoxFunction method = klass.findMethod(name.lexeme);
         if (method != null) return method.bind(this);
 
