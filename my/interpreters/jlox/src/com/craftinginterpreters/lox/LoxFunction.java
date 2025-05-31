@@ -32,6 +32,9 @@ class LoxFunction implements LoxCallable {
         try {
             interpreter.executeBlock(declaration.body, environment);
         } catch (Return returnValue) {
+            // コンストラクタの場合，常に this を返す．
+            if (isInitializer) return closure.getAt(0, "this");
+
             // Return 例外をキャッチしたら，その値を返り値とする．
             return returnValue.value;
         }
