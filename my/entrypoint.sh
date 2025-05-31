@@ -13,7 +13,11 @@ if [ -n "$CHANGED_FILES" ]; then
   done
   unset IFS
 else
-  echo "No changed files detected. Skipping compilation."
+  echo "No changed files detected. Compiling all files..."
+  for file in $(find . -name "*.java"); do
+    javac -encoding UTF-8 -d /app/src/jlox/bin $file
+    echo "Compiled: $file"
+  done
 fi
 
 # TODO: 必要に応じてビルド手順を追記していく
