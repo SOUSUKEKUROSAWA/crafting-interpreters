@@ -134,6 +134,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         endScope();
 
+        // 静的メソッドのスコープ（thisを定義しない）
+        for (Stmt.Function staticMethod : stmt.staticMethods) {
+            resolveFunction(staticMethod, FunctionType.FUNCTION);
+        }
+
         currentClass = enclosingClass;
         return null;
     }

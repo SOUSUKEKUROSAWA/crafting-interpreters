@@ -87,7 +87,17 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             methods.put(method.name.lexeme, function);
         }
 
-        LoxClass klass = new LoxClass(stmt.name.lexeme, methods);
+        Map<String, LoxFunction> staticMethods = new HashMap<>();
+        for (Stmt.Function method : stmt.staticMethods) {
+            LoxFunction function = new LoxFunction(
+                method,
+                environment,
+                false // staticメソッドはinitializerではない
+            );
+            staticMethods.put(method.name.lexeme, function);
+        }
+
+        LoxClass klass = new LoxClass(stmt.name.lexeme, methods, staticMethods);
         environment.assign(stmt.name, klass);
         return null;
     }
@@ -322,9 +332,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object object = evaluate(expr.object);
         if (object instanceof LoxInstance) {
             return ((LoxInstance)object).get(expr.name);
+        } else if (object instanceof LoxClass) {
+            LoxClass klass = (LoxClass) object;
+            LoxFunction staticMethod = klass.findStaticMethod(expr.name.lexeme);
+            if (staticMethod != null) return staticMethod;
+            throw new RuntimeError(expr.name, "Undefined static property '" + expr.name.lexeme + "'.");
         }
-
-        throw new RuntimeError(expr.name, "Only instances have properties.");
+        throw new RuntimeError(expr.name, "Only instances and classes have properties.");
     }
 
     // false, null : false を返す（falsey）

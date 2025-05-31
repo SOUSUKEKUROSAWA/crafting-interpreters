@@ -36,6 +36,7 @@ enum TokenType {
     FALSE,
     FOR,
     FUN,
+    STATIC,
     IF,
     NIL,
     OR,
