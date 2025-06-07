@@ -11,10 +11,16 @@ class LoxInstance {
         this.klass = klass;
     }
 
-    Object get(Token name) {
+    Object get(Interpreter interpreter, Token name) {
         // WARNING: メソッドより先にフィールドを探す＝フィールドがメソッドを隠す
         if (fields.containsKey(name.lexeme)) {
             return fields.get(name.lexeme);
+        }
+
+        LoxFunction getter = klass.findGetter(name.lexeme);
+        if (getter != null) {
+            // getter が見つかった場合は，それを呼び出して返す．
+            return getter.bind(this).call(interpreter, java.util.Collections.emptyList());
         }
 
         // メソッドをダイレクトにコールする場合（e.g. foo.bar();）でも，まず bar を 解釈するために，この処理を通る．

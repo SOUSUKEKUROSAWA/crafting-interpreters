@@ -40,23 +40,47 @@ class Parser {
         }
     }
 
-    // classDecl -> "class" IDENTIFIER "{" function* "}" ;
+    // classDecl -> "class" IDENTIFIER "{" getter* | function* "}" ;
     private Stmt classDeclaration() {
         // IDENTIFIER
         Token name = consume(IDENTIFIER, "Expect class name.");
         // "{"
         consume(LEFT_BRACE, "Expect '{' before class body.");
 
-        // function*
+        // getter* | function*
+        List<Stmt.Function> getters = new ArrayList<>();
         List<Stmt.Function> methods = new ArrayList<>();
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
-            methods.add(function("method"));
+            if (isGetter()) {
+                getters.add(getter());
+            } else {
+                methods.add(function("method"));
+            }
         }
 
         // "}"
         consume(RIGHT_BRACE, "Expect '}' after class body.");
 
-        return new Stmt.Class(name, methods);
+        return new Stmt.Class(name, methods, getters);
+    }
+
+    private boolean isGetter() {
+        if (!check(IDENTIFIER)) return false;
+
+        // 引数なしで { が現れるかを確認
+        return peekNext().type == LEFT_BRACE;
+    }
+
+    // getter -> IDENTIFIER block ;
+    private Stmt.Function getter() {
+        // IDENTIFIER
+        Token name = consume(IDENTIFIER, "Expect getter name.");
+
+        // block
+        consume(LEFT_BRACE, "Expect '{' before getter body.");
+        List<Stmt> body = block();
+
+        return new Stmt.Function(name, new ArrayList<>(), body); // 引数はないことが前提なので空リスト
     }
 
     // function -> IDENTIFIER "(" parameters? ")" block ;
@@ -496,6 +520,11 @@ class Parser {
 
     private Token previous() {
         return tokens.get(current - 1);
+    }
+
+    private Token peekNext() {
+        if (current + 1 >= tokens.size()) return null;
+        return tokens.get(current + 1);
     }
 
     private ParseError error(Token token, String message) {
