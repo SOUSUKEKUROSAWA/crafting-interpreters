@@ -272,7 +272,6 @@ class Parser {
                 return new Expr.Assign(name, value);
             } else if (expr instanceof Expr.Get) { // インスタンスのプロパティへの代入
                 Expr.Get get = (Expr.Get) expr;
-                System.out.println(get.name.lexeme);
                 return new Expr.Set(get.object, get.name, value);
             }
 
