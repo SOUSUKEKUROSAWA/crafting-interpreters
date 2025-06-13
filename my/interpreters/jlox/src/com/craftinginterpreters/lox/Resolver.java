@@ -128,6 +128,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             resolve(stmt.superclass);
         }
 
+        // 全てのメソッド（と this）を囲む新しいスコープを設定し，
+        // その中に super を変数のように定義しておく
+        if (stmt.superclass != null) {
+            beginScope();
+            scopes.peek().put("super", true);
+        }
+
         // メソッドの本文を解決する前に，それを囲む新しいスコープを設定し，
         // その中に this を変数のように定義しておく
         beginScope();
@@ -144,6 +151,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         }
 
         endScope();
+
+        if (stmt.superclass != null) endScope();
 
         currentClass = enclosingClass;
         return null;
@@ -288,6 +297,12 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitSetExpr(Expr.Set expr) {
         resolve(expr.value);
         resolve(expr.object);
+        return null;
+    }
+
+    @Override
+    public Void visitSuperExpr(Expr.Super expr) {
+        resolveLocal(expr, expr.keyword);
         return null;
     }
 

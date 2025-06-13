@@ -87,11 +87,17 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         // 先にクラス名を環境に登録しておく．
         environment.define(stmt.name.lexeme, null);
 
+        if (stmt.superclass != null) {
+            // 現在の環境の内側に新しい環境を作成し，そこにスーパークラスを super という名前で束縛する
+            environment = new Environment(environment);
+            environment.define("super", superclass);
+        }
+
         Map<String, LoxFunction> methods = new HashMap<>();
         for (Stmt.Function method : stmt.methods) {
             LoxFunction function = new LoxFunction(
                 method,
-                environment,
+                environment, // ここで封じ込める（closure）環境は，スーパークラスが束縛されている環境
                 method.name.lexeme.equals("init")
             );
             methods.put(method.name.lexeme, function);
@@ -102,6 +108,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             (LoxClass) superclass,
             methods
         );
+
+        if (stmt.superclass != null) {
+            // スーパークラスの環境をポップする
+            environment = environment.enclosing;
+        }
+
         environment.assign(stmt.name, klass);
         return null;
     }
@@ -220,6 +232,23 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object value = evaluate(expr.value);
         ((LoxInstance)object).set(expr.name, value);
         return value;
+    }
+
+    @Override
+    public Object visitSuperExpr(Expr.Super expr) {
+        int distance = locals.get(expr);
+        LoxClass superclass = (LoxClass)environment.getAt(distance, "super");
+
+        // NOTE: this が束縛される環境は，常にメソッドのクロージャの内側（= super の一つ内側）
+        LoxInstance object = (LoxInstance)environment.getAt(distance - 1, "this");
+
+        LoxFunction method = superclass.findMethod(expr.method.lexeme);
+
+        if (method == null) {
+            throw new RuntimeError(expr.method, "Undefined property '" + expr.method.lexeme + "'.");
+        }
+
+        return method.bind(object);
     }
 
     @Override
