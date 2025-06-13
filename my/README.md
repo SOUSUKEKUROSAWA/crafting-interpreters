@@ -49,7 +49,7 @@ factor      -> unary ( ( "/" | "*" ) unary )* ;                     // 左
 unary       -> ( "-" | "!" ) unary | call ;                         // 右
 call        -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;   // 左
 arguments   -> expression ( "," expression )* ;                     // 左
-primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
+primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER | "this" | "super" "." IDENTIFIER ;
 ```
 
 ※ 左結合: 左オペランドが先に評価される
@@ -57,6 +57,7 @@ primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" |
 ※ 式(expression)と文(statement)の違い＝ExprクラスとStmtクラスの違い（式＝評価の結果を返す．文＝評価の結果を返さない．）
 ※ 宣言と文は使える場所が異なるので区別している（e.g. OK: if (monday) print "bagel";, NG: if (monday) var breakfast = "bagel";）
 ※ return; は return nil; と同義
+※ super は this のように単体では使えない．
 
 ## Types
 

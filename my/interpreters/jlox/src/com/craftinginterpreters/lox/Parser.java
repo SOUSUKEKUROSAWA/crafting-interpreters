@@ -434,7 +434,7 @@ class Parser {
         return new Expr.Call(callee, paren, arguments);
     }
 
-    // primary -> NUMBER | STRING | "false" | "true" | "nil" | "(" expression ")" | IDENTIFIER ;
+    // primary -> NUMBER | STRING | "false" | "true" | "nil" | "(" expression ")" | IDENTIFIER | "this" | "super" "." IDENTIFIER ;
     private Expr primary() {
         if (match(FALSE)) return new Expr.Literal(false);
         if (match(TRUE)) return new Expr.Literal(true);
@@ -446,6 +446,14 @@ class Parser {
 
         if (match(THIS)) {
             return new Expr.This(previous());
+        }
+
+        // "super" "." IDENTIFIER
+        if (match(SUPER)) {
+            Token keyword = previous();
+            consume(DOT, "Expect '.' after 'super'.");
+            Token method = consume(IDENTIFIER, "Expect superclass method name.");
+            return new Expr.Super(keyword, method);
         }
 
         if (match(IDENTIFIER)) {
