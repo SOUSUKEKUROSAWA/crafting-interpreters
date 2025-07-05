@@ -2,6 +2,18 @@
 
 自作 JLOX, CLOX での動作確認用ディレクトリ
 
+JLOX
+
+- Java で書かれた「木の巡回による」インタプリタ
+- Parser -> Syntax Trees -> Interpreter で実行
+- JVM に依存する分，面倒を見る必要のある部分が少ない（簡潔な実装で済む）が低速
+
+CLOX
+
+- C で書かれた「バイトコード式」インタプリタ
+- Compiler -> Bytecode -> Virtual Machine で実行
+- 面倒を見る必要のある部分が多いが，高速
+
 ## Setup
 
 ```sh
