@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:20.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -26,4 +26,9 @@ WORKDIR /app
 
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
-ENTRYPOINT ["./entrypoint.sh"]
+
+FROM base AS java-build
+ENTRYPOINT ["./entrypoint.sh", "-j"]
+
+FROM base AS c-build
+ENTRYPOINT ["./entrypoint.sh", "-c"]

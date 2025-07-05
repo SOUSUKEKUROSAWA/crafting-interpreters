@@ -1,11 +1,12 @@
 # My Interpreters
 
-自作 JLOX での動作確認用ディレクトリ
+自作 JLOX, CLOX での動作確認用ディレクトリ
 
 ## Setup
 
 ```sh
-./run.sh
+./run.sh -j # JLOX の実行環境をセットアップ
+./run.sh -c # CLOX の実行環境をセットアップ
 ```
 
 ## Usage
@@ -15,7 +16,15 @@
 jlox
 
 # Run File
-jlox jlox/sample.lox
+jlox sample.lox
+```
+
+```sh
+# Run Prompt
+clox
+
+# Run File
+clox sample.lox
 ```
 
 ## Grammar
