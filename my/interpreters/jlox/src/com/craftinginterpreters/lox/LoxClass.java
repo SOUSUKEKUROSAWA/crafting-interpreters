@@ -20,7 +20,8 @@ class LoxClass implements LoxCallable {
 
     @Override
     public int arity() {
-        LoxFunction initializer = findMethod("init");
+        LoxInstance instance = new LoxInstance(this);
+        LoxFunction initializer = findMethod(instance, "init");
         if (initializer == null) return 0;
         return initializer.arity();
     }
@@ -28,11 +29,13 @@ class LoxClass implements LoxCallable {
     @Override
     public Object call(Interpreter interpreter, List<Object> arguments) {
         LoxInstance instance = new LoxInstance(this);
-        LoxFunction initializer = findMethod("init");
+        LoxFunction initializer = findMethod(instance, "init");
+
         if (initializer != null) {
             // 即座に束縛することで，コンストラクタ内で this を使えるようにする
-            initializer.bind(instance).call(interpreter, arguments);
+            initializer.call(interpreter, arguments);
         }
+
         return instance;
     }
 
@@ -41,13 +44,23 @@ class LoxClass implements LoxCallable {
         return name;
     }
 
-    LoxFunction findMethod(String name) {
-        if (methods.containsKey(name)) {
-            return methods.get(name);
+    LoxFunction findMethod(LoxInstance instance, String name) {
+        LoxFunction method = null;
+        LoxFunction inner = null;
+        LoxClass klass = this;
+
+        // クラスを下から上に辿っていき，inner を上書きしていく
+        while (klass != null) {
+            if (klass.methods.containsKey(name)) {
+                inner = method;
+                method = klass.methods.get(name);
+            }
+
+            klass = klass.superclass;
         }
 
-        if (superclass != null) {
-            return superclass.findMethod(name);
+        if (method != null) {
+            return method.bind(instance, inner);
         }
 
         return null;

@@ -138,9 +138,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         }
 
         // メソッドの本文を解決する前に，それを囲む新しいスコープを設定し，
-        // その中に this を変数のように定義しておく
+        // その中に this と inner を変数のように定義しておく
         beginScope();
         scopes.peek().put("this", true);
+        scopes.peek().put("inner", true);
 
         for (Stmt.Function method : stmt.methods) {
             FunctionType declaration = FunctionType.METHOD;

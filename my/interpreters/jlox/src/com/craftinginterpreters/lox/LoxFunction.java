@@ -50,10 +50,11 @@ class LoxFunction implements LoxCallable {
     }
 
     // メソッドのクロージャの内側にネストした新しい環境を作成し，
-    // そこに this を束縛する．
-    LoxFunction bind(LoxInstance instance) {
+    // そこに this と inner を束縛する．
+    LoxFunction bind(LoxInstance instance, LoxFunction inner) {
         Environment environment = new Environment(closure);
         environment.define("this", instance);
+        environment.define("inner", inner);
         return new LoxFunction(declaration, environment, isInitializer);
     }
 }
