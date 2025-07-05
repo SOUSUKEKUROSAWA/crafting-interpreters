@@ -56,7 +56,41 @@ if [ "$LANGUAGE" = "java" ]; then
   cd /app/src
   exec bash
 elif [ "$LANGUAGE" = "c" ]; then
-  # TODO: clox 用のスクリプトを追記
-  echo "This is clox."
-fi
+  echo "Compiling C files..."
+  cd /app/src/clox/src
 
+  if [ -n "$CHANGED_FILES" ]; then
+    echo "Changed files detected. Compiling only changed files..."
+    IFS=$'\n'
+    for file in $CHANGED_FILES; do
+      if [[ $file == *.c ]]; then
+        obj_file="/app/src/clox/bin/${file%.c}.o"
+        gcc -c -o "$obj_file" "$file"
+        echo "Compiled: $file -> $obj_file"
+      fi
+    done
+    unset IFS
+  else
+    echo "No changed files detected. Compiling all files..."
+    # すべての.cファイルをコンパイル
+    for file in $(find . -name "*.c"); do
+      obj_file="/app/src/clox/bin/${file%.c}.o"
+      gcc -c -o "$obj_file" "$file"
+      echo "Compiled: $file -> $obj_file"
+    done
+  fi
+
+  # 最終的な実行ファイルをリンク
+  echo "Linking executable..."
+  cd /app/src/clox/bin
+  gcc -o clox *.o
+  echo "Created executable: /app/src/clox/bin/clox"
+
+  # エイリアスの登録
+  echo "Adding aliases..."
+  echo 'alias clox="/app/src/clox/bin/clox"' >> ~/.bashrc
+  echo "Added: clox <=== /app/src/clox/bin/clox"
+
+  cd /app/src
+  exec bash
+fi
