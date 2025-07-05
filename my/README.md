@@ -24,8 +24,10 @@ jlox jlox/sample.lox
 
 ```ebnf
 program     -> declaration* EOF ;
-declaration -> classDecl | funDecl | varDecl | statement ;
+declaration -> classDecl | traitDecl | funDecl | varDecl | statement ;
 classDecl   -> "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
+traitDecl   -> "trait" IDENTIFIER withClause "{" function* "}" ;
+withClause  -> ( "with" IDENTIFIER ( "," IDENTIFIER )* )? ;
 funDecl     -> "fun" function ;
 function    -> IDENTIFIER "(" parameters? ")" block ;
 parameters  -> IDENTIFIER ( "," IDENTIFIER )* ;

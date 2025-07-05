@@ -15,6 +15,7 @@ abstract class Stmt {
     R visitVarStmt(Var stmt);
     R visitBlockStmt(Block stmt);
     R visitClassStmt(Class stmt);
+    R visitTraitStmt(Trait stmt);
   }
 
   static class Expression extends Stmt {
@@ -138,17 +139,36 @@ abstract class Stmt {
   static class Class extends Stmt {
     final Token name;
     final Expr.Variable superclass;
+    final List<Expr> traits;
     final List<Stmt.Function> methods;
 
-    Class(Token name, Expr.Variable superclass, List<Stmt.Function> methods) {
+    Class(Token name, Expr.Variable superclass, List<Expr> traits, List<Stmt.Function> methods) {
       this.name = name;
       this.superclass = superclass;
+      this.traits = traits;
       this.methods = methods;
     }
 
     @Override
     <R> R accept(Visitor<R> visitor) {
       return visitor.visitClassStmt(this);
+    }
+  }
+
+  static class Trait extends Stmt {
+    final Token name;
+    final List<Expr> traits;
+    final List<Stmt.Function> methods;
+
+    Trait(Token name, List<Expr> traits, List<Stmt.Function> methods) {
+      this.name = name;
+      this.traits = traits;
+      this.methods = methods;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitTraitStmt(this);
     }
   }
 

@@ -93,7 +93,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             environment.define("super", superclass);
         }
 
-        Map<String, LoxFunction> methods = new HashMap<>();
+        Map<String, LoxFunction> methods = applyTraits(stmt.traits);
         for (Stmt.Function method : stmt.methods) {
             LoxFunction function = new LoxFunction(
                 method,
@@ -116,6 +116,62 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         environment.assign(stmt.name, klass);
         return null;
+    }
+
+    @Override
+    public Void visitTraitStmt(Stmt.Trait stmt) {
+        // NOTE: Trait メソッドの内部から Trait 自身を参照できるようにするために，
+        // 先に Trait 名を環境に登録しておく．
+        environment.define(stmt.name.lexeme, null);
+
+        Map<String, LoxFunction> methods = applyTraits(stmt.traits);
+
+        for (Stmt.Function method : stmt.methods) {
+            if (methods.containsKey(method.name.lexeme)) {
+                throw new RuntimeError(
+                    method.name,
+                    "A previous trait declares a method named '" + method.name.lexeme + "'."
+                );
+            }
+
+            LoxFunction function = new LoxFunction(method, environment, false);
+            methods.put(method.name.lexeme, function);
+        }
+
+        LoxTrait trait = new LoxTrait(stmt.name, methods);
+
+        environment.assign(stmt.name, trait);
+        return null;
+    }
+
+    private Map<String, LoxFunction> applyTraits(List<Expr> traits) {
+        Map<String, LoxFunction> methods = new HashMap<>();
+
+        for (Expr traitExpr : traits) {
+            Object traitObject = evaluate(traitExpr);
+            if (!(traitObject instanceof LoxTrait)) {
+                Token name = ((Expr.Variable)traitExpr).name;
+                throw new RuntimeError(
+                    name,
+                    "'" + name.lexeme + "' is not a trait."
+                );
+            }
+
+            LoxTrait trait = (LoxTrait) traitObject;
+            for (String name : trait.methods.keySet()) {
+                if (methods.containsKey(name)) {
+                    // NOTE: Trait によるメソッドの重複は実行時エラーになる
+                    throw new RuntimeError(
+                        trait.name,
+                        "A previous trait declares a method named '" + name + "'."
+                    );
+                }
+
+                methods.put(name, trait.methods.get(name));
+            }
+        }
+
+        return methods;
     }
 
     // 式文は結果を棄てる

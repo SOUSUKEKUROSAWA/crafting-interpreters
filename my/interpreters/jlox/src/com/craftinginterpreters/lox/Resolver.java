@@ -23,7 +23,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private enum ClassType {
         NONE,
         CLASS,
-        SUBCLASS
+        SUBCLASS,
+        TRAIT
     }
 
     Resolver(Interpreter interpreter) {
@@ -137,6 +138,10 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             scopes.peek().put("super", true);
         }
 
+        for (Expr trait : stmt.traits) {
+            resolve(trait);
+        }
+
         // メソッドの本文を解決する前に，それを囲む新しいスコープを設定し，
         // その中に this を変数のように定義しておく
         beginScope();
@@ -155,6 +160,34 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         endScope();
 
         if (stmt.superclass != null) endScope();
+
+        currentClass = enclosingClass;
+        return null;
+    }
+
+    @Override
+    public Void visitTraitStmt(Stmt.Trait stmt) {
+        declare(stmt.name);
+        define(stmt.name);
+
+        ClassType enclosingClass = currentClass;
+        currentClass = ClassType.TRAIT;
+
+        for (Expr trait : stmt.traits) {
+            resolve(trait);
+        }
+
+        // メソッドの本文を解決する前に，それを囲む新しいスコープを設定し，
+        // その中に this を変数のように定義しておく
+        beginScope();
+        scopes.peek().put("this", true);
+
+        for (Stmt.Function method : stmt.methods) {
+            FunctionType declaration = FunctionType.METHOD;
+            resolveFunction(method, declaration);
+        }
+
+        endScope();
 
         currentClass = enclosingClass;
         return null;
@@ -307,6 +340,8 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         if (currentClass == ClassType.NONE) {
             Lox.error(expr.keyword, "Cannot use 'super' outside of a class.");
             return null;
+        } else if (currentClass == ClassType.TRAIT) {
+            Lox.error(expr.keyword, "Can't use 'super' in a trait.");
         } else if (currentClass != ClassType.SUBCLASS) {
             Lox.error(expr.keyword, "Cannot use 'super' in a class with no superclass.");
             return null;

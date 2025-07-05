@@ -26,10 +26,11 @@ class Parser {
         return statements;
     }
 
-    // declaration -> classDecl | funDecl | varDecl | statement ;
+    // declaration -> classDecl | traitDecl | funDecl | varDecl | statement ;
     private Stmt declaration() {
         try {
             if (match(CLASS)) return classDeclaration();
+            if (match(TRAIT)) return traitDeclaration();
             // funDecl -> "fun" function ;
             if (match(FUN)) return function("function");
             if (match(VAR)) return varDeclaration();
@@ -40,7 +41,7 @@ class Parser {
         }
     }
 
-    // classDecl -> "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
+    // classDecl -> "class" IDENTIFIER ( "<" IDENTIFIER )? withClause "{" function* "}" ;
     private Stmt classDeclaration() {
         // IDENTIFIER
         Token name = consume(IDENTIFIER, "Expect class name.");
@@ -51,6 +52,9 @@ class Parser {
             consume(IDENTIFIER, "Expect superclass name.");
             superclass = new Expr.Variable(previous());
         }
+
+        // withClause
+        List<Expr> traits = withClause();
 
         // "{"
         consume(LEFT_BRACE, "Expect '{' before class body.");
@@ -64,7 +68,44 @@ class Parser {
         // "}"
         consume(RIGHT_BRACE, "Expect '}' after class body.");
 
-        return new Stmt.Class(name, superclass, methods);
+        return new Stmt.Class(name, superclass, traits, methods);
+    }
+
+    // traitDecl -> "trait" IDENTIFIER withClause "{" function* "}" ;
+    private Stmt traitDeclaration() {
+        // IDENTIFIER
+        Token name = consume(IDENTIFIER, "Expect trait name.");
+
+        // withClause
+        List<Expr> traits = withClause();
+
+        // "{"
+        consume(LEFT_BRACE, "Expect '{' before trait body.");
+
+        // function*
+        List<Stmt.Function> methods = new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+          methods.add(function("method"));
+        }
+
+        // "}"
+        consume(RIGHT_BRACE, "Expect '}' after trait body.");
+
+        return new Stmt.Trait(name, traits, methods);
+    }
+
+    // withClause -> ( "with" IDENTIFIER ( "," IDENTIFIER )* )? ;
+    private List<Expr> withClause() {
+        List<Expr> traits = new ArrayList<>();
+
+        if (match(WITH)) {
+            do {
+                consume(IDENTIFIER, "Expect trait name.");
+                traits.add(new Expr.Variable(previous()));
+            } while (match(COMMA));
+        }
+
+        return traits;
     }
 
     // function -> IDENTIFIER "(" parameters? ")" block ;
