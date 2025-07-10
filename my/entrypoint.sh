@@ -20,7 +20,6 @@ while getopts "jc" opt; do
 done
 
 if [ "$LANGUAGE" = "java" ]; then
-  echo "Compiling Java files..."
   # WARNING: パッケージ名を正しく解決できるディレクトリまで移動しないとエラーになる
   cd /app/src/jlox/src
   if [ -n "$CHANGED_FILES" ]; then
@@ -56,29 +55,15 @@ if [ "$LANGUAGE" = "java" ]; then
   cd /app/src
   exec bash
 elif [ "$LANGUAGE" = "c" ]; then
-  echo "Compiling C files..."
   cd /app/src/clox/src
 
-  if [ -n "$CHANGED_FILES" ]; then
-    echo "Changed files detected. Compiling only changed files..."
-    IFS=$'\n'
-    for file in $CHANGED_FILES; do
-      if [[ $file == *.c ]]; then
-        obj_file="/app/src/clox/bin/${file%.c}.o"
-        gcc -c -o "$obj_file" "$file"
-        echo "Compiled: $file -> $obj_file"
-      fi
-    done
-    unset IFS
-  else
-    echo "No changed files detected. Compiling all files..."
-    # すべての.cファイルをコンパイル
-    for file in $(find . -name "*.c"); do
-      obj_file="/app/src/clox/bin/${file%.c}.o"
-      gcc -c -o "$obj_file" "$file"
-      echo "Compiled: $file -> $obj_file"
-    done
-  fi
+  echo "Compiling all files..."
+  # すべての.cファイルをコンパイル
+  for file in $(find . -name "*.c"); do
+    obj_file="/app/src/clox/bin/${file%.c}.o"
+    gcc -c -o "$obj_file" "$file"
+    echo "Compiled: $file -> $obj_file"
+  done
 
   # 最終的な実行ファイルをリンク
   echo "Linking executable..."
