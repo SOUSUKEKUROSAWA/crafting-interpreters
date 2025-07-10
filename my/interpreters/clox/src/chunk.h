@@ -2,6 +2,7 @@
 #define clox_chunk_h
 
 #include "common.h"
+#include "value.h"
 
 // NOTE: バイトコードは，個々の命令が 1 バイトの演算コード（operation code, opcode）
 typedef enum {
@@ -18,10 +19,12 @@ typedef struct {
     int count; // 要素数（利用済みの容量）
     int capacity; // 総容量
     uint8_t* code; // 8 bit（1 byte）符号なし整数型へのポインタ
+    ValueArray constants; // 定数プール（値の配列）
 } Chunk;
 
 void initChunk(Chunk* chunk);
 void freeChunk(Chunk* chunk);
 void writeChunk(Chunk* chunk, uint8_t byte);
+int addConstant(Chunk* chunk, Value value);
 
 #endif
