@@ -4,9 +4,13 @@
 #include "common.h"
 #include "value.h"
 
-// NOTE: バイトコードは，個々の命令が 1 バイトの演算コード（operation code, opcode）
+/**
+ * NOTE: バイトコード = 個々の命令が 1 バイトの演算コード（operation code, opcode）
+ * NOTE: operand = opcode の直後に置かれ，opcode ごとに異なる意味を持つパラメータ
+ */
 typedef enum {
-    OP_RETURN,
+    OP_CONSTANT, // 特定の数を生成する．operand は生成する変数を表す．
+    OP_RETURN, // 現在の関数からリターンする．
 } OpCode;
 
 /**
