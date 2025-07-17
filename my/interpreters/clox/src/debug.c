@@ -31,6 +31,16 @@ static int simpleInstruction(const char* name, int offset) {
 int disassembleInstruction(Chunk* chunk, int offset) {
     printf("%04d ", offset);
 
+    if (
+        offset > 0
+        && chunk->lines[offset] == chunk->lines[offset - 1]
+    ) {
+        // 一つ前のバイトコードと同じ行の場合は表示の重複を避ける．
+        printf("   | ");
+    } else {
+        printf("%4d ", chunk->lines[offset]);
+    }
+
     uint8_t instruction = chunk->code[offset];
     switch (instruction) {
         case OP_CONSTANT:
