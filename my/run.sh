@@ -26,6 +26,12 @@ if [ "$LANGUAGE" = "java" ]; then
   CHANGED_FILES=$(powershell.exe "git diff --name-only --diff-filter=ACMR" | grep "\.java$" | sed 's|^my/interpreters/jlox/src/||')
 elif [ "$LANGUAGE" = "c" ]; then
   CHANGED_FILES=$(powershell.exe "git diff --name-only --diff-filter=ACMR" | grep "\.c$\|\.h$" | sed 's|^my/interpreters/clox/src/||')
+else
+  echo "Error: 起動モードを選択してください．" >&2
+  echo "Usage: $0 [-j|-c]"
+  echo "  -j: Java mode"
+  echo "  -c: C mode"
+  exit 1
 fi
 
 echo "Building Docker image for $LANGUAGE mode..."

@@ -78,4 +78,10 @@ elif [ "$LANGUAGE" = "c" ]; then
 
   cd /app/src
   exec bash
+else
+  echo "Error: 起動モードを選択してください．" >&2
+  echo "Usage: $0 [-j|-c]"
+  echo "  -j: Java mode"
+  echo "  -c: C mode"
+  exit 1
 fi
