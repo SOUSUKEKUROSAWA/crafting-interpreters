@@ -22,13 +22,17 @@ typedef enum {
 typedef struct {
     int count; // 要素数（利用済みの容量）
     int capacity; // 総容量
-    uint8_t* code; // 8 bit（1 byte）符号なし整数型へのポインタ
+
+    // NOTE: 実行時にサイズが変化するので，動的配列として実装し，ポインタを保持する．
+    uint8_t* code; // バイトコード（動的配列）
+    int* lines; // 各バイトコードのソースコード上での行番号（動的配列）
+
     ValueArray constants; // 定数プール（値の配列）
 } Chunk;
 
 void initChunk(Chunk* chunk);
 void freeChunk(Chunk* chunk);
-void writeChunk(Chunk* chunk, uint8_t byte);
+void writeChunk(Chunk* chunk, uint8_t byte, int line);
 int addConstant(Chunk* chunk, Value value);
 
 #endif
