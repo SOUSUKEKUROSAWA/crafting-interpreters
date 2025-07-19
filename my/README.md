@@ -5,7 +5,7 @@
 JLOX
 
 - Java で書かれた「木の巡回による」インタプリタ
-- Parser -> Syntax Trees -> Interpreter で実行
+- Parser (Frontend) -> Syntax Trees -> Interpreter (Backend) で実行
 - JVM に依存する分，面倒を見る必要のある部分が少ない（簡潔な実装で済む）
 - Syntax Trees はメモリ空間上に散らばっているため，キャッシュ効率が悪く，情報量も多い
 - 実行速度は低速
@@ -13,7 +13,7 @@ JLOX
 CLOX
 
 - C で書かれた「バイトコード式」インタプリタ
-- Compiler -> Bytecode -> Virtual Machine で実行
+- Compiler (Frontend) -> Bytecode -> Virtual Machine (Backend) で実行
 - 面倒を見る必要のある部分が多い
 - Bytecode はメモリ空間上に密に連続して並ぶため，キャッシュ効率が高く，情報量も少ない
 - 実行速度は高速
