@@ -10,6 +10,7 @@
  */
 typedef enum {
     OP_CONSTANT, // 特定の数を生成する．operand は生成する変数を表す．
+    OP_CONSTANT_LONG, // 1 byte ( = 256 ) より大きい数を扱える OP_CONSTANT
     OP_RETURN, // 現在の関数からリターンする．
 } OpCode;
 
@@ -34,5 +35,6 @@ void initChunk(Chunk* chunk);
 void freeChunk(Chunk* chunk);
 void writeChunk(Chunk* chunk, uint8_t byte, int line);
 int addConstant(Chunk* chunk, Value value);
+void writeConstant(Chunk* chunk, Value value, int line);
 
 #endif
