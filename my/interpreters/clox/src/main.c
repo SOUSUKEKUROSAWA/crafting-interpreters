@@ -6,15 +6,15 @@ int main(int argc, const char* argv[]) {
     Chunk chunk;
     initChunk(&chunk);
 
-    int constant = addConstant(&chunk, 1.2);
-    writeChunk(&chunk, OP_CONSTANT, 123);
-    writeChunk(&chunk, constant, 123);
+    // 定数プールを 1 バイト（8 bit = 256）以上のサイズにする
+    for (int i = 0; i < 500; i++) {
+        addConstant(&chunk, (double)i);
+    }
+
+    // その状態で追加の定数が上手く扱えればOK
+    writeConstant(&chunk, 1.2, 123);
 
     writeChunk(&chunk, OP_RETURN, 123);
-
-    int constant2 = addConstant(&chunk, 1000000000);
-    writeChunk(&chunk, OP_CONSTANT, 124);
-    writeChunk(&chunk, constant2, 124);
 
     disassembleChunk(&chunk, "test chunk");
 
