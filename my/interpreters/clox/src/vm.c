@@ -7,9 +7,25 @@
 // NOTE: 関数全てにVMへのポインタを渡すのは厄介なので，グローバルオブジェクトとして定義
 VM vm;
 
-void initVM() {}
+static void resetStack() {
+    vm.stackTop = vm.stack; // NOTE: vm.stack はスタック配列の先頭アドレスを表す．
+}
+
+void initVM() {
+    resetStack();
+}
 
 void freeVM() {}
+
+void push(Value value) {
+    *vm.stackTop = value; // NOTE: こちらはポインタが示す値の変更．
+    vm.stackTop++; // NOTE: こちらはポインタ自体の変更．
+}
+
+Value pop() {
+    vm.stackTop--; // 実際に削除はしない．
+    return *vm.stackTop;
+}
 
 // NOTE: VM のコアとなる関数
 static InterpretResult run() {
