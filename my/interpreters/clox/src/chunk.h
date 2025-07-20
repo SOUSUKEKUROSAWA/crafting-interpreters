@@ -24,8 +24,8 @@ typedef struct {
     int capacity; // 総容量
 
     // NOTE: 実行時にサイズが変化するので，動的配列として実装し，ポインタを保持する．
-    uint8_t* code; // バイトコード（動的配列）
-    int* lines; // 各バイトコードのソースコード上での行番号（動的配列）
+    uint8_t* code; // バイトコード（動的配列）の先頭へのポインタ
+    int* lines; // 各バイトコードのソースコード上での行情報（動的配列）の先頭へのポインタ
 
     ValueArray constants; // 定数プール（値の配列）
 } Chunk;
