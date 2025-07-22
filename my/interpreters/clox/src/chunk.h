@@ -10,6 +10,7 @@
  */
 typedef enum {
     OP_CONSTANT, // 特定の数を生成する．operand は生成する変数を表す．
+    OP_NEGATE, // (-) 正負逆転演算．
     OP_RETURN, // 現在の関数からリターンする．
 } OpCode;
 
