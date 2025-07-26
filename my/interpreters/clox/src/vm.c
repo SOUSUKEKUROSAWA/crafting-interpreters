@@ -51,6 +51,19 @@ static InterpretResult run() {
  */
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 
+/**
+ * NOTE: プリプロセッサは演算子もテキストトークンとして受け取るので，
+ *       引数に渡すことができる．
+ * NOTE: マクロは，テキストをコードとしてそのまま展開するだけなので，
+ *       do while によって囲うことで，複数の文の実行をどのブロック内でも意図したとおりに実施できるようにしている．
+ */
+#define BINARY_OP(op) \
+    do { \
+        double b = pop(); \
+        double a = pop(); \
+        push(a op b); \
+    } while (false)
+
     for (;;) {
 
 #ifdef DEBUG_TRACE_EXECUTION
@@ -77,6 +90,10 @@ static InterpretResult run() {
                 push(constant);
                 break;
             }
+            case OP_ADD:       BINARY_OP(+); break;
+            case OP_SUBSTRACT: BINARY_OP(-); break;
+            case OP_MULTIPLY:  BINARY_OP(*); break;
+            case OP_DIVIDE:    BINARY_OP(/); break;
             case OP_NEGATE: push(-pop()); break;
             case OP_RETURN: {
                 printValue(pop());
@@ -88,6 +105,7 @@ static InterpretResult run() {
 
 #undef READ_BYTE
 #undef READ_CONSTANT
+#undef BINARY_OP
 }
 
 InterpretResult interpret(Chunk* chunk) {

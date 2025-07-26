@@ -45,6 +45,21 @@ int disassembleInstruction(Chunk* chunk, int offset) {
     switch (instruction) {
         case OP_CONSTANT:
             return constantInstruction("OP_CONSTANT", chunk, offset);
+
+        /**
+         * NOTE: 算術演算子（+ など）はスタックからオペランドを取得するが，
+         *       算術演算のバイトコード命令（OP_ADD など）自体はオペランドを含まない．
+         *       命令が実行されたら，その時にスタックから値をポップすればいいので，オペランドとして保持する必要がないのがポイント．
+         */
+        case OP_ADD:
+            return simpleInstruction("OP_ADD", offset);
+        case OP_SUBSTRACT:
+            return simpleInstruction("OP_SUBSTRACT", offset);
+        case OP_MULTIPLY:
+            return simpleInstruction("OP_MULTIPLY", offset);
+        case OP_DIVIDE:
+            return simpleInstruction("OP_DIVIDE", offset);
+
         case OP_NEGATE:
             return simpleInstruction("OP_NEGATE", offset);
         case OP_RETURN:
