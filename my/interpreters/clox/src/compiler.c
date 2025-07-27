@@ -17,7 +17,7 @@ void compile(const char* source) {
             printf("%4d ", token.line);
             line = token.line;
         } else {
-            printf(" | ");
+            printf("   | ");
         }
 
         /**
