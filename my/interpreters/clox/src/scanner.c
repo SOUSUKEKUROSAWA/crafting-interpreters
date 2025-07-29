@@ -22,6 +22,9 @@ static bool isAtEnd() {
     return *scanner.current == '\0';
 }
 
+/**
+ * 現在の字句を返し，１つ進む．
+ */
 static char advance() {
     scanner.current++;
     return scanner.current[-1];
@@ -34,6 +37,12 @@ static char peek() {
     return *scanner.current;
 }
 
+/**
+ * 現在の字句が期待する字句であれば，
+ * true を返し，1つ進む．
+ * そうでなければ，
+ * false を返すだけ（進まない）．
+ */
 static bool match(char expected) {
     if (isAtEnd()) return false;
     if (*scanner.current != expected) return false;
