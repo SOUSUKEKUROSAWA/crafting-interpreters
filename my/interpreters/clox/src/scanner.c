@@ -38,6 +38,14 @@ static char peek() {
 }
 
 /**
+ * 現在位置の次の字句を返すだけ（進まない）．
+ */
+static char peekNext() {
+    if (isAtEnd()) return '\0';
+    return scanner.current[1];
+}
+
+/**
  * 現在の字句が期待する字句であれば，
  * true を返し，1つ進む．
  * そうでなければ，
@@ -80,6 +88,14 @@ static void skipWhitespace() {
             case '\n':
                 scanner.line++;
                 advance();
+                break;
+            case '/':
+                if (peekNext() == '/') {
+                    // コメントは行末まで続く
+                    while (peek() != '\n' && !isAtEnd()) advance();
+                } else {
+                    return;
+                }
                 break;
             default:
                 return;
