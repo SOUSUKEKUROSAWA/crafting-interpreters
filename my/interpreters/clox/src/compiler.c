@@ -6,10 +6,10 @@
 #include "scanner.h"
 
 typedef struct {
-    Token current;
-    Token previous;
-    bool hadError;
-    bool panicMode;
+    Token current; // 現在のトークン
+    Token previous; // １つ前のトークン
+    bool hadError; // エラーが発生したかどうか
+    bool panicMode; // パニックモードに入っているかどうか
 } Parser;
 
 static Parser parser;
