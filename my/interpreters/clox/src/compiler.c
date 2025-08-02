@@ -13,6 +13,11 @@ typedef struct {
 } Parser;
 
 static Parser parser;
+Chunk* compilingChunk;
+
+static Chunk* currentChunk() {
+    return compilingChunk;
+}
 
 static void errorAt(Token* token, const char* message) {
     if (parser.panicMode) return; // 一度パニックモードに入ったら，それ以降のエラーを無視する．
@@ -60,14 +65,39 @@ static void consume(TokenType type, const char* message) {
     errorAtCurrent(message);
 }
 
+/**
+ * @param byte 命令コード（opcode）または命令のオペランド（operand）
+ */
+static void emitByte(uint8_t byte) {
+    writeChunk(currentChunk(), byte, parser.previous.line);
+}
+
+/**
+ * @param byte1 命令コード（opcode）
+ * @param byte2 命令のオペランド（operand）
+ */
+static void emitBytes(uint8_t byte1, uint8_t byte2) {
+    emitByte(byte1);
+    emitByte(byte2);
+}
+
+static void emitReturn() {
+    emitByte(OP_RETURN);
+}
+
+static void endCompiler() {
+    emitReturn();
+}
+
 bool compile(const char* source, Chunk* chunk) {
     initScanner(source);
-
+    compilingChunk = chunk;
     parser.hadError = false;
     parser.panicMode = false;
 
     advance();
     expression();
     consume(TOKEN_EOF, "Expect end of expression.");
+    endCompiler();
     return !parser.hadError;
 }
