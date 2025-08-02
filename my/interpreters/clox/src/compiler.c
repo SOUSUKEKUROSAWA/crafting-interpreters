@@ -12,6 +12,24 @@ typedef struct {
     bool panicMode; // パニックモードに入っているかどうか
 } Parser;
 
+/**
+ * 解析の優先順位
+ * 下に行くほど優先順位高
+ */
+typedef enum {
+    PREC_NONE,
+    PREC_ASSIGNMENT,    // =
+    PREC_OR,
+    PREC_AND,
+    PREC_EQUALITY,      // == !=
+    PREC_COMPARISON,    // < > <= >=
+    PREC_TERM,          // + -
+    PREC_FACTORY,       // * /
+    PREC_UNARY,         // ! -
+    PREC_CALL,          // . ()
+    PREC_PRIMARY,
+} Precedence;
+
 static Parser parser;
 Chunk* compilingChunk;
 
@@ -104,8 +122,15 @@ static void endCompiler() {
     emitReturn();
 }
 
-static void expression() {
+/**
+ * 現在のトークンを起点として，引数 precedence 以上の優先順位を持つ式のみ解析する．
+ */
+static void parsePrecedence(Precedence precedence) {
     //
+}
+
+static void expression() {
+    parsePrecedence(PREC_ASSIGNMENT);
 }
 
 /**
@@ -123,6 +148,17 @@ static void grouping() {
 static void number() {
     double value = strtod(parser.previous.start, NULL); // 文字列を double 型に変換
     emitConstant(value);
+}
+
+static void unary() {
+    TokenType operatorType = parser.previous.type;
+
+    parsePrecedence(PREC_UNARY);
+
+    switch (operatorType) {
+        case TOKEN_MINUS: emitByte(OP_NEGATE); break;
+        default: return;
+    }
 }
 
 bool compile(const char* source, Chunk* chunk) {
