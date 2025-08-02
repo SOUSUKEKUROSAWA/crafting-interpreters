@@ -85,8 +85,31 @@ static void emitReturn() {
     emitByte(OP_RETURN);
 }
 
+static uint8_t makeConstant(Value value) {
+    int constant = addConstant(currentChunk(), value);
+
+    if (constant > UINT8_MAX) {
+        error("Too many constants in one chunk.");
+        return 0;
+    }
+
+    return (uint8_t)constant;
+}
+
+static void emitConstant(Value value) {
+    emitBytes(OP_CONSTANT, makeConstant(value));
+}
+
 static void endCompiler() {
     emitReturn();
+}
+
+/**
+ * WARNING: 数値リテラルのトークンがすでに消費され，previous に格納されていることを前提とする．
+ */
+static void number() {
+    double value = strtod(parser.previous.start, NULL); // 文字列を double 型に変換
+    emitConstant(value);
 }
 
 static void expression() {
