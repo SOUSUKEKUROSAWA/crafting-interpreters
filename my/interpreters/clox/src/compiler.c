@@ -104,16 +104,25 @@ static void endCompiler() {
     emitReturn();
 }
 
+static void expression() {
+    //
+}
+
+/**
+ * WARNING: "(" のトークンがすでに消費され，previous に格納されていることを前提とする．
+ * NOTE: グルーピング自体に実行時のセマンティクスはないので，バイトコードは出力しない．
+ */
+static void grouping() {
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
+}
+
 /**
  * WARNING: 数値リテラルのトークンがすでに消費され，previous に格納されていることを前提とする．
  */
 static void number() {
     double value = strtod(parser.previous.start, NULL); // 文字列を double 型に変換
     emitConstant(value);
-}
-
-static void expression() {
-    //
 }
 
 bool compile(const char* source, Chunk* chunk) {
