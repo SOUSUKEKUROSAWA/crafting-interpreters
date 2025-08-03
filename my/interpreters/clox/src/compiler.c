@@ -17,7 +17,7 @@ typedef struct {
  * 下に行くほど優先順位高（＝先に評価される）
  */
 typedef enum {
-    PREC_NONE,
+    PREC_NONE,          // 優先順位なし（中置演算子でない）
     PREC_ASSIGNMENT,    // =
     PREC_OR,
     PREC_AND,
@@ -117,7 +117,7 @@ static void emitReturn() {
 static uint8_t makeConstant(Value value) {
     int constant = addConstant(currentChunk(), value);
 
-    if (constant > UINT8_MAX) {
+    if (constant > UINT8_MAX) { // UINT8_MAX = uint8_t の最大値 = 255
         error("Too many constants in one chunk.");
         return 0;
     }
