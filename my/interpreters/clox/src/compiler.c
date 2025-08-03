@@ -14,7 +14,7 @@ typedef struct {
 
 /**
  * 解析の優先順位
- * 下に行くほど優先順位高
+ * 下に行くほど優先順位高（＝先に評価される）
  */
 typedef enum {
     PREC_NONE,
