@@ -24,11 +24,22 @@ typedef enum {
     PREC_EQUALITY,      // == !=
     PREC_COMPARISON,    // < > <= >=
     PREC_TERM,          // + -
-    PREC_FACTORY,       // * /
+    PREC_FACTOR,        // * /
     PREC_UNARY,         // ! -
     PREC_CALL,          // . ()
     PREC_PRIMARY,
 } Precedence;
+
+/**
+ * 引数を取らず，何も返さない関数へのポインタ
+ */
+typedef void (*ParseFn)();
+
+typedef struct {
+    ParseFn prefix; // 与えられたトークン型で始まる前置式（e.g. -a, !a）をコンパイルする関数
+    ParseFn infix; // 与えられたトークン型が左オペランドの次に来るような中置式（e.g. a + b, a / b）をコンパイルする関数
+    Precedence precedence; // 与えられたトークン型を演算子として使う中置式（e.g. a + b, a / b）の優先順位
+} ParseRule;
 
 static Parser parser;
 Chunk* compilingChunk;
@@ -122,16 +133,9 @@ static void endCompiler() {
     emitReturn();
 }
 
-/**
- * 現在のトークンを起点として，引数 precedence 以上の優先順位を持つ式のみ解析する．
- */
-static void parsePrecedence(Precedence precedence) {
-    //
-}
-
-static void expression() {
-    parsePrecedence(PREC_ASSIGNMENT);
-}
+static void expression();
+static ParseRule* getRule(TokenType type);
+static void parsePrecedence(Precedence precedence);
 
 /**
  * WARNING: 左側のオペランド全体がコンパイルされ，
@@ -139,7 +143,7 @@ static void expression() {
  */
 static void binary() {
     TokenType operatorType = parser.previous.type;
-    ParserRule* rule = getRule(operatorType);
+    ParseRule* rule = getRule(operatorType);
 
     /**
      * NOTE: 2項演算子は左結合なので，右オペランドの優先順位は演算子自体の優先順位よりも1つ高い．
@@ -182,6 +186,68 @@ static void unary() {
         case TOKEN_MINUS: emitByte(OP_NEGATE); break;
         default: return;
     }
+}
+
+/**
+ * プラットパーサ全体を駆動する，解析ルール表
+ * NOTE: 関数へのポインタを表に記入できるようにするため，それらの関数定義より後に定義している．
+ */
+ParseRule rules[] = {
+    [TOKEN_LEFT_PAREN]    = {grouping, NULL,   PREC_NONE},
+    [TOKEN_RIGHT_PAREN]   = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_RIGHT_BRACE]   = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_COMMA]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_DOT]           = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_MINUS]         = {unary,    binary, PREC_TERM},
+    [TOKEN_PLUS]          = {NULL,     binary, PREC_TERM},
+    [TOKEN_SEMICOLON]     = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_SLASH]         = {NULL,     binary, PREC_FACTOR},
+    [TOKEN_STAR]          = {NULL,     binary, PREC_FACTOR},
+    [TOKEN_BANG]          = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_BANG_EQUAL]    = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_EQUAL]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_EQUAL_EQUAL]   = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_GREATER]       = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_GREATER_EQUAL] = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_LESS]          = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_LESS_EQUAL]    = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_IDENTIFIER]    = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_STRING]        = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_NUMBER]        = {number,   NULL,   PREC_NONE},
+    [TOKEN_AND]           = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_CLASS]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_ELSE]          = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_FALSE]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_FOR]           = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_FUN]           = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_IF]            = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_NIL]           = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_OR]            = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_RETURN]        = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_SUPER]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_THIS]          = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_TRUE]          = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_VAR]           = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_WHILE]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_ERROR]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_EOF]           = {NULL,     NULL,   PREC_NONE},
+};
+
+static ParseRule* getRule(TokenType type) {
+    return &rules[type];
+}
+
+/**
+ * 現在のトークンを起点として，引数 precedence 以上の優先順位を持つ式のみ解析する．
+ */
+static void parsePrecedence(Precedence precedence) {
+    //
+}
+
+static void expression() {
+    parsePrecedence(PREC_ASSIGNMENT);
 }
 
 bool compile(const char* source, Chunk* chunk) {
