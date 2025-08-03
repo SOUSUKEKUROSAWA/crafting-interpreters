@@ -134,6 +134,29 @@ static void expression() {
 }
 
 /**
+ * WARNING: 左側のオペランド全体がコンパイルされ，
+ *          それに続く中置演算子も消費されていることを前提とする．
+ */
+static void binary() {
+    TokenType operatorType = parser.previous.type;
+    ParserRule* rule = getRule(operatorType);
+
+    /**
+     * NOTE: 2項演算子は左結合なので，右オペランドの優先順位は演算子自体の優先順位よりも1つ高い．
+     * e.g. 1+2+3+4 は ((1+2)+3)+4 のように解析される．
+     */
+    parsePrecedence((Precedence)(rule->precedence + 1));
+
+    switch (operatorType) {
+        case TOKEN_PLUS: emitByte(OP_ADD); break;
+        case TOKEN_MINUS: emitByte(OP_SUBSTRACT); break;
+        case TOKEN_STAR: emitByte(OP_MULTIPLY); break;
+        case TOKEN_SLASH: emitByte(OP_DIVIDE); break;
+        default: return;
+    }
+}
+
+/**
  * WARNING: "(" のトークンがすでに消費され，previous に格納されていることを前提とする．
  * NOTE: グルーピング自体に実行時のセマンティクスはないので，バイトコードは出力しない．
  */
