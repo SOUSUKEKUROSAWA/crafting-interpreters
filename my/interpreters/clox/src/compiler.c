@@ -78,6 +78,9 @@ static void errorAtCurrent(const char* message) {
     errorAt(&parser.current, message);
 }
 
+/**
+ * 現在のトークンを解析し，消費する．
+ */
 static void advance() {
     parser.previous = parser.current;
 
@@ -89,6 +92,9 @@ static void advance() {
     }
 }
 
+/**
+ * 指定されたトークン型にマッチすれば消費する．
+ */
 static void consume(TokenType type, const char* message) {
     if (parser.current.type == type) {
         advance();
