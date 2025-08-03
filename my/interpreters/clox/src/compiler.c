@@ -243,7 +243,27 @@ static ParseRule* getRule(TokenType type) {
  * 現在のトークンを起点として，引数 precedence 以上の優先順位を持つ式のみ解析する．
  */
 static void parsePrecedence(Precedence precedence) {
-    //
+    /**
+     * 前置式の解析
+     * NOTE: 第1のトークンは，必ず何らかの前置式に属する．
+     */
+    advance();
+    ParseFn prefixRule = getRule(parser.previous.type)->prefix;
+    if (prefixRule == NULL) {
+        error("Expect expression.");
+        return;
+    }
+    prefixRule();
+
+    /**
+     * 中置式の解析
+     * 引数で与えられた優先順位が，現在の中置演算子を許可するほど低かった場合に限って解析を行う
+     */
+    while (precedence <= getRule(parser.current.type)->precedence) {
+        advance();
+        ParseFn infixRule = getRule(parser.previous.type)->infix;
+        infixRule();
+    }
 }
 
 static void expression() {
