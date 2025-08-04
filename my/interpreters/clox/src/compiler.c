@@ -273,7 +273,7 @@ static void parsePrecedence(Precedence precedence) {
 
     /**
      * 中置式の解析
-     * 引数で与えられた優先順位が，現在の中置演算子を許可するほど低かった場合に限って解析を行う
+     * 次の演算子の優先順位が今の式の優先順位以上なら、その演算子を「今の式の一部」としてパースし続ける
      */
     while (precedence <= getRule(parser.current.type)->precedence) {
         advance();
