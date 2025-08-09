@@ -3,7 +3,25 @@
 
 #include "common.h"
 
-typedef double Value;
+typedef enum {
+    VAL_BOOL,
+    VAL_NIL,
+    VAL_NUMBER,
+} ValueType;
+
+/**
+ * タグ付き共用体（tagged union）
+ *
+ * NOTE: 同じビット列を共用して，別の型として解釈することでメモリ領域を削減できる．
+ * WARNING: その代わり，意図しない形でビット列の意味が解釈してしまう危険性を伴う．
+ */
+typedef struct {
+    ValueType type;
+    union {
+        bool boolean;
+        double number;
+    } as;
+} Value;
 
 typedef struct {
     int capacity; // 総容量
