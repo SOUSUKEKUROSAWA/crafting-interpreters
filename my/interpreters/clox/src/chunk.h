@@ -9,7 +9,7 @@
  * NOTE: operand = opcode の直後に置かれ，opcode ごとに異なる意味を持つパラメータ
  */
 typedef enum {
-    OP_CONSTANT, // 特定の数を生成する．operand は生成する変数を表す．
+    OP_CONSTANT, // 特定の数をスタックにプッシュする．operand はプッシュする値を表す．
     OP_NIL, // nil をスタックにプッシュする．
     OP_TRUE, // true をスタックにプッシュする．
     OP_FALSE, // false をスタックにプッシュする．
