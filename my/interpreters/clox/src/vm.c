@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdio.h>
 
 #include "common.h"
@@ -10,6 +11,25 @@ VM vm;
 
 static void resetStack() {
     vm.stackTop = vm.stack; // NOTE: vm.stack はスタック配列の先頭アドレスを表す．
+}
+
+/**
+ * 可変長引数のエラーログ関数
+ *
+ * NOTE: printf と同じ書式でメッセージを受け取る
+ */
+static void runtimeError(const char* format, ...) {
+    va_list args;
+    va_start(args, format); // 可変長引数の取り出しを開始
+    vfprintf(stderr, format, args);
+    va_end(args); // 可変長引数の取り出しを終了（クリーンアップ）
+    fputs("\n", stderr);
+
+    size_t instruction = vm.ip - vm.chunk->code - 1; // 直前に実行した命令のバイトオフセットを算出．
+    int line = vm.chunk->lines[instruction];
+    fprintf(stderr, "[line %d] in script\n", line);
+
+    resetStack();
 }
 
 void initVM() {
@@ -26,6 +46,14 @@ void push(Value value) {
 Value pop() {
     vm.stackTop--; // 実際に削除はしない．
     return *vm.stackTop;
+}
+
+/**
+ * distance = 0 の場合，スタックの一番上から Value を取得する．
+ * distance = 1 の場合は，その一つ下．
+ */
+static Value peek(int distance) {
+    return vm.stackTop[-1 - distance];
 }
 
 // NOTE: VM のコアとなる関数
@@ -95,7 +123,13 @@ static InterpretResult run() {
             case OP_SUBSTRACT: BINARY_OP(-); break;
             case OP_MULTIPLY:  BINARY_OP(*); break;
             case OP_DIVIDE:    BINARY_OP(/); break;
-            case OP_NEGATE: push(-pop()); break;
+            case OP_NEGATE:
+                if (!IS_NUMBER(peek(0))) {
+                    runtimeError("Operand must be a number.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                push(NUMBER_VAL(-AS_NUMBER(pop())));
+                break;
             case OP_RETURN: {
                 printValue(pop());
                 printf("\n");
