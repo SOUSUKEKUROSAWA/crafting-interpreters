@@ -41,7 +41,7 @@ typedef struct {
  * NOTE: 静的な型を持つ値を，動的な型を持つ clox の値に昇格させている．
  */
 #define BOOL_VAL(value)     ((Value){VAL_BOOL, {.boolean = value}}) // 渡されたC言語の値から，ブール型の Value を生成する．
-#define NIL_VAL(value)      ((Value){VAL_NIL, {.number = 0}}) // 渡されたC言語の値から，nil 型の Value を生成する．
+#define NIL_VAL             ((Value){VAL_NIL, {.number = 0}}) // 渡されたC言語の値から，nil 型の Value を生成する．
 #define NUMBER_VAL(value)   ((Value){VAL_NUMBER, {.number = value}}) // 渡されたC言語の値から，数値型の Value を生成する．
 
 typedef struct {
