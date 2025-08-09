@@ -190,7 +190,7 @@ static void grouping() {
  */
 static void number() {
     double value = strtod(parser.previous.start, NULL); // 文字列を double 型に変換
-    emitConstant(value);
+    emitConstant(NUMBER_VAL(value));
 }
 
 static void unary() {
