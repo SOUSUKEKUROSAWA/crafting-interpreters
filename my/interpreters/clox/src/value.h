@@ -50,6 +50,7 @@ typedef struct {
     Value* values; // 定数プール（値の配列）
 } ValueArray;
 
+bool valuesEqual(Value a, Value b);
 void initValueArray(ValueArray* array);
 void writeValueArray(ValueArray* array, Value value);
 void freeValueArray(ValueArray* array);

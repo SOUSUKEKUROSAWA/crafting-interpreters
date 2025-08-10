@@ -13,6 +13,9 @@ typedef enum {
     OP_NIL, // nil をスタックにプッシュする．
     OP_TRUE, // true をスタックにプッシュする．
     OP_FALSE, // false をスタックにプッシュする．
+    OP_EQUAL, // == （NOTE: OP_NOT と組み合わせることで != を表現可能）
+    OP_GREATER, // > （NOTE: OP_NOT と組み合わせることで <= を表現可能）
+    OP_LESS, // < （NOTE: OP_NOT と組み合わせることで >= を表現可能）
     OP_ADD, // 加算
     OP_SUBSTRACT, // 減算
     OP_MULTIPLY, // 乗算

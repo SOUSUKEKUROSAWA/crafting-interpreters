@@ -57,6 +57,12 @@ int disassembleInstruction(Chunk* chunk, int offset) {
          *       算術演算のバイトコード命令（OP_ADD など）自体はオペランドを含まない．
          *       命令が実行されたら，その時にスタックから値をポップすればいいので，オペランドとして保持する必要がないのがポイント．
          */
+        case OP_EQUAL:
+            return simpleInstruction("OP_EQUAL", offset);
+        case OP_GREATER:
+            return simpleInstruction("OP_GREATER", offset);
+        case OP_LESS:
+            return simpleInstruction("OP_LESS", offset);
         case OP_ADD:
             return simpleInstruction("OP_ADD", offset);
         case OP_SUBSTRACT:
