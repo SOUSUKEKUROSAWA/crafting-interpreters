@@ -7,6 +7,7 @@ typedef enum {
     VAL_BOOL,
     VAL_NIL,
     VAL_NUMBER,
+    VAL_OBJ // サイズが大きく可変な値．データ自体はヒープに置かれ，Value のペイロードは，そのデータを指すポインタになる．（e.g. 文字列，インスタンス，関数など）
 } ValueType;
 
 /**
@@ -20,6 +21,7 @@ typedef struct {
     union {
         bool boolean;
         double number;
+        Obj* obj; // サイズが大きく可変な値．データ自体はヒープに置かれ，Value のペイロードは，そのデータを指すポインタになる．（e.g. 文字列，インスタンス，関数など）
     } as;
 } Value;
 
@@ -33,7 +35,9 @@ typedef struct {
 #define IS_BOOL(value)      ((value).type == VAL_BOOL)
 #define IS_NIL(value)       ((value).type == VAL_NIL)
 #define IS_NUMBER(value)    ((value).type == VAL_NUMBER)
+#define IS_OBJ(value)       ((value).type == VAL_OBJ)
 
+#define AS_OBJ(value)       ((value).as.obj) // Value 型をアンパックしてC言語の Obj 型として値を取り出す．
 #define AS_BOOL(value)      ((value).as.boolean) // Value 型をアンパックしてC言語の bool 型として値を取り出す．
 #define AS_NUMBER(value)    ((value).as.number) // Value 型をアンパックしてC言語の double 型として値を取り出す．
 
@@ -43,6 +47,7 @@ typedef struct {
 #define BOOL_VAL(value)     ((Value){VAL_BOOL, {.boolean = value}}) // 渡されたC言語の値から，ブール型の Value を生成する．
 #define NIL_VAL             ((Value){VAL_NIL, {.number = 0}}) // 渡されたC言語の値から，nil 型の Value を生成する．
 #define NUMBER_VAL(value)   ((Value){VAL_NUMBER, {.number = value}}) // 渡されたC言語の値から，数値型の Value を生成する．
+#define OBJ_VAL(object)      ((Value){VAL_OBJ, {.obj = (Obj*)object}}) // 渡されたC言語の値から，数値型の Value を生成する．
 
 typedef struct {
     int capacity; // 総容量
