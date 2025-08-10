@@ -17,6 +17,7 @@ typedef enum {
     OP_SUBSTRACT, // 減算
     OP_MULTIPLY, // 乗算
     OP_DIVIDE, // 除算
+    OP_NOT, // (!) 否定
     OP_NEGATE, // (-) 正負逆転演算．
     OP_RETURN, // 現在の関数からリターンする．
 } OpCode;
