@@ -34,6 +34,8 @@ struct ObjString {
 
 ObjString* copyString(const char* chars, int length);
 
+void printObject(Value value);
+
 /**
  * NOTE: inline: 関数呼び出しの代わりに「呼び出し箇所へ関数本体を展開してよい」というコンパイラへの最適化ヒント（必ず展開される保証はない）
  * WARNING: 引数 value を2度利用しているため，副作用が発生しないようにマクロに直接展開せずに関数化している．
