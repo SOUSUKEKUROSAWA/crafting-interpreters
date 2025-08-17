@@ -3,6 +3,10 @@
 
 #include "common.h"
 
+// NOTE: void* ではなく，指定した type としてポインタを返すためにマクロでラップしている．
+#define ALLOCATE(type, count) \
+    (type*)reallocate(NULL, 0, sizeof(type) * (count))
+
 #define GROW_CAPACITY(capacity) \
     ((capacity) < 8 ? 8 : (capacity) * 2)
 
