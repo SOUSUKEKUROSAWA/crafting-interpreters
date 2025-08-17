@@ -23,6 +23,20 @@ static ObjString* allocateString(char* chars, int length) {
     return string;
 }
 
+/**
+ * 渡された文字列をそのまま ObjString に割り当てる（所有する）．
+ *
+ * @note すでにヒープに割り当て済みの文字列に対して使う．
+ */
+ObjString* takeString(char* chars, int length) {
+    return allocateString(chars, length);
+}
+
+/**
+ * 渡された文字列をヒープ上にコピーして ObjString に割り当てる（所有しない）．
+ *
+ * @note 渡される文字列がソース文字列の一部のような場合に使う．
+ */
 ObjString* copyString(const char* chars, int length) {
     // ヒープ上に新しい配列を割り当てる．ターミネータも含むので length + 1
     char* heapChars = ALLOCATE(char, length + 1);
