@@ -2,10 +2,13 @@
 #define clox_memory_h
 
 #include "common.h"
+#include "object.h"
 
 // NOTE: void* ではなく，指定した type としてポインタを返すためにマクロでラップしている．
 #define ALLOCATE(type, count) \
     (type*)reallocate(NULL, 0, sizeof(type) * (count))
+
+#define FREE(type, pointer) reallocate(pointer, sizeof(type), 0)
 
 #define GROW_CAPACITY(capacity) \
     ((capacity) < 8 ? 8 : (capacity) * 2)
@@ -30,5 +33,7 @@
  * | 0以外   | oldSize より大きい | 既存の割り当てを拡大する   |
  */
 void* reallocate(void* pointer, size_t oldSize, size_t newSize);
+
+void freeObjects();
 
 #endif

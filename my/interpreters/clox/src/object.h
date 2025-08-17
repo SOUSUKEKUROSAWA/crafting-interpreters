@@ -24,6 +24,7 @@ typedef enum {
  */
 struct Obj {
     ObjType type;
+    struct Obj* next; // 追跡用の Obj チェーン（リスト）における，次の Obj へのポインタ
 };
 
 struct ObjString {
