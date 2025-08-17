@@ -29,7 +29,7 @@ struct Obj {
 struct ObjString {
     Obj obj; // オブジェクト型共通のデータ．NOTE: このフィールドを先頭に持ってくることで，ObjString* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
     int length; // 割り当てられたバイト数
-    char* chars;
+    char* chars; // 文字配列へのポインタ
 };
 
 ObjString* copyString(const char* chars, int length);
