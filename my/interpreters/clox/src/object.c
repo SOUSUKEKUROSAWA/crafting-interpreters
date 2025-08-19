@@ -19,20 +19,12 @@ static Obj* allocateObject(size_t size, ObjType type) {
     return object;
 }
 
-static ObjString* allocateString(char* chars, int length) {
-    ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
+ObjString* makeString(int length) {
+    ObjString* string = (ObjString*)allocateObject(
+        sizeof(ObjString) + length + 1, OBJ_STRING
+    );
     string->length = length;
-    string->chars = chars;
     return string;
-}
-
-/**
- * 渡された文字列をそのまま ObjString に割り当てる（所有する）．
- *
- * @note すでにヒープに割り当て済みの文字列に対して使う．
- */
-ObjString* takeString(char* chars, int length) {
-    return allocateString(chars, length);
 }
 
 /**
@@ -41,16 +33,15 @@ ObjString* takeString(char* chars, int length) {
  * @note 渡される文字列がソース文字列の一部のような場合に使う．
  */
 ObjString* copyString(const char* chars, int length) {
-    // ヒープ上に新しい配列を割り当てる．ターミネータも含むので length + 1
-    char* heapChars = ALLOCATE(char, length + 1);
+    ObjString* string = makeString(length);
 
     // 配列に字句をコピー
-    memcpy(heapChars, chars, length);
+    memcpy(string->chars, chars, length);
 
     // NOTE: ソース文字列の一部の参照の可能性があるので，ターミネータを明示的に追加
-    heapChars[length] = '\0';
+    string->chars[length] = '\0';
 
-    return allocateString(heapChars, length);
+    return string;
 }
 
 void printObject(Value value) {

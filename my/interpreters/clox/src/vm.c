@@ -74,12 +74,11 @@ static void concatenate() {
     ObjString* a = AS_STRING(pop());
 
     int length = a->length + b->length;
-    char* chars = ALLOCATE(char, length + 1); // ターミネータ（\0）のために + 1
-    memcpy(chars, a->chars, a->length);
-    memcpy(chars + a->length, b->chars, b->length); // chars の先頭から a->length バイト進んだ位置から，b の内容を b->length バイト分コピーする．
-    chars[length] = '\0';
+    ObjString* result = makeString(length);
+    memcpy(result->chars, a->chars, a->length);
+    memcpy(result->chars + a->length, b->chars, b->length); // result->chars の先頭から a->length バイト進んだ位置から，b の内容を b->length バイト分コピーする．
+    result->chars[length] = '\0';
 
-    ObjString* result = takeString(chars, length);
     push(OBJ_VAL(result));
 }
 
