@@ -211,8 +211,9 @@ static void number() {
 static void string() {
     emitConstant(OBJ_VAL(
         // 先頭と末尾から引用符（"）を除外するために +1, -2 をする．
-        copyString(
-            parser.previous.start + 1,
+        makeString(
+            false,
+            (char*)parser.previous.start + 1,
             parser.previous.length - 2
         )
     ));

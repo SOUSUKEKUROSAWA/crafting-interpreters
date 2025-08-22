@@ -29,12 +29,12 @@ struct Obj {
 
 struct ObjString {
     Obj obj; // オブジェクト型共通のデータ．NOTE: このフィールドを先頭に持ってくることで，ObjString* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
+    bool ownsChars; // 文字配列を所有しているか（コピーではないか）
     int length; // 割り当てられたバイト数
-    char* chars; // 文字配列の先頭へのポインタ
+    const char* chars; // 文字配列の先頭へのポインタ
 };
 
-ObjString* takeString(char* chars, int length);
-ObjString* copyString(const char* chars, int length);
+ObjString* makeString(bool ownsChars, char* chars, int length);
 
 void printObject(Value value);
 

@@ -79,7 +79,7 @@ static void concatenate() {
     memcpy(chars + a->length, b->chars, b->length); // chars の先頭から a->length バイト進んだ位置から，b の内容を b->length バイト分コピーする．
     chars[length] = '\0';
 
-    ObjString* result = takeString(chars, length);
+    ObjString* result = makeString(true, chars, length);
     push(OBJ_VAL(result));
 }
 
