@@ -19,11 +19,28 @@ static Obj* allocateObject(size_t size, ObjType type) {
     return object;
 }
 
-static ObjString* allocateString(char* chars, int length) {
+static ObjString* allocateString(
+    char* chars,
+    int length,
+    uint32_t hash
+) {
     ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
     string->length = length;
     string->chars = chars;
+    string->hash = hash;
     return string;
+}
+
+/**
+ * @note ハッシュ関数: FNV-1a
+ */
+static uint32_t hashString(const char* key, int length) {
+    uint32_t hash = 2166136261u; // 初期値（数学的な特性を慎重に検討して選択された定数）
+    for (int i = 0; i < length; i++) {
+        hash ^= (uint8_t)key[i]; // 現在のハッシュ値（hash）と文字列のi番目の文字（key[i]）の XOR を計算する．
+        hash *= 16777619; // FNV prime（分散を良くするための大きな定数）を掛ける．
+    }
+    return hash;
 }
 
 /**
@@ -32,7 +49,8 @@ static ObjString* allocateString(char* chars, int length) {
  * @note すでにヒープに割り当て済みの文字列に対して使う．
  */
 ObjString* takeString(char* chars, int length) {
-    return allocateString(chars, length);
+    uint32_t hash = hashString(chars, length);
+    return allocateString(chars, length, hash);
 }
 
 /**
@@ -41,6 +59,8 @@ ObjString* takeString(char* chars, int length) {
  * @note 渡される文字列がソース文字列の一部のような場合に使う．
  */
 ObjString* copyString(const char* chars, int length) {
+    uint32_t hash = hashString(chars, length);
+
     // ヒープ上に新しい配列を割り当てる．ターミネータも含むので length + 1
     char* heapChars = ALLOCATE(char, length + 1);
 
@@ -50,7 +70,7 @@ ObjString* copyString(const char* chars, int length) {
     // NOTE: ソース文字列の一部の参照の可能性があるので，ターミネータを明示的に追加
     heapChars[length] = '\0';
 
-    return allocateString(heapChars, length);
+    return allocateString(heapChars, length, hash);
 }
 
 void printObject(Value value) {

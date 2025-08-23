@@ -31,6 +31,7 @@ struct ObjString {
     Obj obj; // オブジェクト型共通のデータ．NOTE: このフィールドを先頭に持ってくることで，ObjString* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
     int length; // 割り当てられたバイト数
     char* chars; // 文字配列の先頭へのポインタ
+    uint32_t hash; // その文字列に対応するハッシュ（ハッシュ再計算を不要にするためにキャッシュとして保持）
 };
 
 ObjString* takeString(char* chars, int length);
