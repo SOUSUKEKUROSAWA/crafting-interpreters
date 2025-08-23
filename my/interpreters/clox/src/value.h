@@ -55,7 +55,7 @@ typedef struct {
 typedef struct {
     int capacity; // 総容量
     int count; // 要素数（利用済みの容量）
-    Value* values; // 定数プール（値の配列）
+    Value* values; // 定数プール（値の配列）の先頭要素へのポインタ
 } ValueArray;
 
 bool valuesEqual(Value a, Value b);
