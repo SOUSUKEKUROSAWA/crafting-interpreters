@@ -61,6 +61,34 @@ static Entry* findEntry(
 }
 
 /**
+ * capacity で指定された個数のエントリを持つ配列を用意し，ハッシュ表に紐づける．
+ *
+ * @note capacity が変わると，エントリが格納されるべきインデックスも変化してしまうため，
+ *       既存のエントリは，その新しく作成した配列に再記入する．
+ */
+static void adjustCapacity(Table* table, int capacity) {
+    Entry* entries = ALLOCATE(Entry, capacity);
+
+    for (int i = 0; i < capacity; i++) {
+        entries[i].key = NULL;
+        entries[i].value = NIL_VAL;
+    }
+
+    for (int i = 0; i < table->capacity; i++) {
+        Entry* entry = &table->entries[i]; // 古いエントリ配列
+        if (entry->key == NULL) continue;
+
+        Entry* dest = findEntry(entries, capacity, entry->key); // 古いエントリの，新しいエントリ配列における格納場所
+        dest->key = entry->key;
+        dest->value = entry->value;
+    }
+
+    FREE_ARRAY(Entry, table->entries, table->capacity); // 古いエントリ配列のメモリを解放
+    table->entries = entries;
+    table->capacity = capacity;
+}
+
+/**
  * ハッシュ表にエントリを追加／上書きする．
  *
  * @return true: 新規エントリーの追加, false: 既存のエントリーの上書き
@@ -78,4 +106,16 @@ bool tableSet(Table* table, ObjString* key, Value value) {
     entry->key = key;
     entry->value = value;
     return isNewKey;
+}
+
+/**
+ * あるハッシュ表（from）から別のハッシュ表（to）へと，全てのエントリをコピーする．
+ */
+void tableAddAll(Table* from, Table* to) {
+    for (int i = 0; i < from->capacity; i++) {
+        Entry* entry = &from->entries[i];
+        if (entry->key != NULL) {
+            tableSet(to, entry->key, entry->value);
+        }
+    }
 }
