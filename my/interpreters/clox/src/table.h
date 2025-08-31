@@ -17,7 +17,7 @@ typedef struct {
  * @note count / capacity = ハッシュ表の占有率
  */
 typedef struct {
-    int count; // 要素数（利用済みの容量）
+    int count; // 要素数（利用済みの容量）＋墓標数
     int capacity; // 総容量
     Entry* entries; // エントリの配列の先頭要素へのポインタ
 } Table;

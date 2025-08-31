@@ -44,6 +44,9 @@ static Entry* findEntry(
     /**
      * WARNING: 占有率が 100% にならないように capacity が調整されることを前提としている．
      *  占有率が 100% になると無限ループになってしまう．
+     *
+     * WARNING: 墓標エントリだけ（空エントリ無し）になってしまっても無限ループになってしまう．
+     *  だから，墓標エントリは記入済みとして扱う．
      */
     for (;;) {
         Entry* entry = &entries[index];
@@ -92,6 +95,8 @@ bool tableGet(Table* table, ObjString* key, Value* value) {
  *
  * @note capacity が変わると，エントリが格納されるべきインデックスも変化してしまうため，
  *       既存のエントリは，その新しく作成した配列に再記入する．
+ *
+ * @note 墓標エントリはコピーしても意味がないので，コピーしない．
  */
 static void adjustCapacity(Table* table, int capacity) {
     Entry* entries = ALLOCATE(Entry, capacity);
@@ -101,6 +106,7 @@ static void adjustCapacity(Table* table, int capacity) {
         entries[i].value = NIL_VAL;
     }
 
+    table->count = 0; // NOTE: 墓標エントリがカットされることで，エントリ数も変化する可能性があるため再計算．
     for (int i = 0; i < table->capacity; i++) {
         Entry* entry = &table->entries[i]; // 古いエントリ配列
         if (entry->key == NULL) continue;
@@ -108,6 +114,8 @@ static void adjustCapacity(Table* table, int capacity) {
         Entry* dest = findEntry(entries, capacity, entry->key); // 古いエントリの，新しいエントリ配列における格納場所
         dest->key = entry->key;
         dest->value = entry->value;
+
+        table->count++;
     }
 
     FREE_ARRAY(Entry, table->entries, table->capacity); // 古いエントリ配列のメモリを解放
@@ -128,7 +136,9 @@ bool tableSet(Table* table, ObjString* key, Value value) {
 
     Entry* entry = findEntry(table->entries, table->capacity, key);
     bool isNewKey = entry->key == NULL;
-    if (isNewKey) table->count++;
+
+    // NOTE: 墓標エントリの場合は，既にカウント済みなのでインクリメントしない．
+    if (isNewKey && IS_NIL(entry->value)) table->count++;
 
     entry->key = key;
     entry->value = value;
@@ -147,6 +157,10 @@ bool tableDelete(Table* table, ObjString* key) {
      * NOTE: エントリをクリアするのではなく，墓標を立てる理由
      *  単純にエントリをクリアしてしまうと，線形探針が機能しなくなってしまうため，
      *  特別な標準エントリ（sentinel entry）で置き換える．
+     *  また，findEntry や adjustCapacity で考慮することが増えるものの，
+     *  全体としては，探針チェーンを再構成するよりも高速になる（効率が良い）．
+     *
+     * NOTE: 墓標エントリは記入済みエントリとして扱うので，table->count はそのままにしておく．
      */
     entry->key = NULL;
     entry->value = BOOL_VAL(true);
