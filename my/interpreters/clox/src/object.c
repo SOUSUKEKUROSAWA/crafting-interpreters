@@ -3,6 +3,7 @@
 
 #include "memory.h"
 #include "object.h"
+#include "table.h"
 #include "value.h"
 #include "vm.h"
 
@@ -28,6 +29,7 @@ static ObjString* allocateString(
     string->length = length;
     string->chars = chars;
     string->hash = hash;
+    tableSet(&vm.strings, string, NIL_VAL); // NOTE: 値はどうでもいいので nil を使う．
     return string;
 }
 
@@ -50,6 +52,14 @@ static uint32_t hashString(const char* key, int length) {
  */
 ObjString* takeString(char* chars, int length) {
     uint32_t hash = hashString(chars, length);
+
+    // 文字列がすでにインターン化されていれば，所有権を解放したうえで，そのポインタを返す．
+    ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
+    if (interned != NULL) {
+        FREE_ARRAY(char, chars, length + 1);
+        return interned;
+    }
+
     return allocateString(chars, length, hash);
 }
 
@@ -60,6 +70,10 @@ ObjString* takeString(char* chars, int length) {
  */
 ObjString* copyString(const char* chars, int length) {
     uint32_t hash = hashString(chars, length);
+
+    // 文字列がすでにインターン化されていれば，そのポインタを返す．
+    ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
+    if (interned != NULL) return interned;
 
     // ヒープ上に新しい配列を割り当てる．ターミネータも含むので length + 1
     char* heapChars = ALLOCATE(char, length + 1);

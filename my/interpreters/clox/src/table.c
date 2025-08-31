@@ -179,3 +179,44 @@ void tableAddAll(Table* from, Table* to) {
         }
     }
 }
+
+/**
+ * 所与の文字列がインターン化済みかどうかを確認する．
+ *
+ * @param table インターン化済みの文字列の一覧（ハッシュ表）
+ * @param chars 探しているキーを表現する生の文字配列
+ * @return インターン化済みの場合: そのキーへのポインタ，未インターン化の場合: NULL
+ * @note 関数呼び出し時点では，まだ ObjString を作成していない．
+ */
+ObjString* tableFindString(
+    Table* table,
+    const char* chars,
+    int length,
+    uint32_t hash
+) {
+    if (table->count == 0) return NULL;
+
+    uint32_t index = hash % table->capacity;
+
+    for (;;) {
+        Entry* entry = &table->entries[index];
+
+        if (entry->key == NULL) {
+            // （墓標エントリではない，）空エントリの場合
+            if (IS_NIL(entry->value)) return NULL;
+        } else if (
+            /**
+             * （素早い比較）まず，長さとハッシュの比較を行う．
+             * （厳密な比較）ハッシュが衝突している可能性もあるので，最後に1文字ずつ比較する．
+             */
+            entry->key->length == length
+            && entry->key->hash == hash
+            && memcmp(entry->key->chars, chars, length) == 0
+        ) {
+            return entry->key;
+        }
+
+        // 線形探針
+        index = (index + 1) % table->capacity;
+    }
+}
