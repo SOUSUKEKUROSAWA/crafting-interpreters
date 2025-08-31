@@ -61,6 +61,22 @@ static Entry* findEntry(
 }
 
 /**
+ * ハッシュ表から所与のキーに一致するエントリの値を取得する．
+ *
+ * @param value 出力パラメータ．キーに一致するエントリの値が呼び出し元で取得できるように，このパラメータにコピーされる．
+ * @return true: キーを持つエントリが存在した, false: 存在しなかった
+ */
+bool tableGet(Table* table, ObjString* key, Value* value) {
+    if (table->count == 0) return false;
+
+    Entry* entry = findEntry(table->entries, table->capacity, key);
+    if (entry->key == NULL) return false;
+
+    *value = entry->value;
+    return true;
+}
+
+/**
  * capacity で指定された個数のエントリを持つ配列を用意し，ハッシュ表に紐づける．
  *
  * @note capacity が変わると，エントリが格納されるべきインデックスも変化してしまうため，
