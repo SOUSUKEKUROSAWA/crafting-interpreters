@@ -39,6 +39,7 @@ static Entry* findEntry(
      * WARNING: 総容量は小さすぎると，衝突のリスクが高まるので，占有率を調整して，適切に拡張する必要がある．
      */
     uint32_t index = key->hash % capacity;
+    Entry* tombstone = NULL; // 最初に見つけた墓標の位置（ポインタ）
 
     /**
      * WARNING: 占有率が 100% にならないように capacity が調整されることを前提としている．
@@ -47,7 +48,17 @@ static Entry* findEntry(
     for (;;) {
         Entry* entry = &entries[index];
 
-        if (entry->key == key || entry->key == NULL) {
+        if (entry->key == NULL) {
+            if (IS_NIL(entry->value)) {
+                // 空エントリの場合，
+                // 墓標を通過していたら，その墓標を返して再利用してもらう．
+                return tombstone != NULL ? tombstone : entry;
+            } else {
+                // 墓標エントリの場合，
+                // それが最初に見つけた墓標であれば記録する．
+                if (tombstone == NULL) tombstone = entry;
+            }
+        } else if (entry->key == key) {
             return entry;
         }
 
@@ -122,6 +133,25 @@ bool tableSet(Table* table, ObjString* key, Value value) {
     entry->key = key;
     entry->value = value;
     return isNewKey;
+}
+
+bool tableDelete(Table* table, ObjString* key) {
+    if (table->count == 0) return false;
+
+    Entry* entry = findEntry(table->entries, table->capacity, key);
+    if (entry->key == NULL) return false;
+
+    /**
+     * エントリに墓標（tombstone）を立てる．
+     *
+     * NOTE: エントリをクリアするのではなく，墓標を立てる理由
+     *  単純にエントリをクリアしてしまうと，線形探針が機能しなくなってしまうため，
+     *  特別な標準エントリ（sentinel entry）で置き換える．
+     */
+    entry->key = NULL;
+    entry->value = BOOL_VAL(true);
+
+    return true;
 }
 
 /**
