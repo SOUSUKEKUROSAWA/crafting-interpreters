@@ -27,7 +27,7 @@ void freeTable(Table* table) {
 static Entry* findEntry(
     Entry* entries,
     int capacity,
-    ObjString* key
+    Value key
 ) {
     /**
      * NOTE: ハッシュ表が高速かつコンパクトな理由
@@ -38,7 +38,7 @@ static Entry* findEntry(
      *
      * WARNING: 総容量は小さすぎると，衝突のリスクが高まるので，占有率を調整して，適切に拡張する必要がある．
      */
-    uint32_t index = key->hash % capacity;
+    uint32_t index = hashValue(key) % capacity;
     Entry* tombstone = NULL; // 最初に見つけた墓標の位置（ポインタ）
 
     /**
@@ -51,7 +51,7 @@ static Entry* findEntry(
     for (;;) {
         Entry* entry = &entries[index];
 
-        if (entry->key == NULL) {
+        if (IS_EMPTY(entry->key)) {
             if (IS_NIL(entry->value)) {
                 // 空エントリの場合，
                 // 墓標を通過していたら，その墓標を返して再利用してもらう．
@@ -61,7 +61,7 @@ static Entry* findEntry(
                 // それが最初に見つけた墓標であれば記録する．
                 if (tombstone == NULL) tombstone = entry;
             }
-        } else if (entry->key == key) {
+        } else if (valuesEqual(key, entry->key)) {
             return entry;
         }
 
@@ -80,11 +80,11 @@ static Entry* findEntry(
  * @param value 出力パラメータ．キーに一致するエントリの値が呼び出し元で取得できるように，このパラメータにコピーされる．
  * @return true: キーを持つエントリが存在した, false: 存在しなかった
  */
-bool tableGet(Table* table, ObjString* key, Value* value) {
+bool tableGet(Table* table, Value key, Value* value) {
     if (table->count == 0) return false;
 
     Entry* entry = findEntry(table->entries, table->capacity, key);
-    if (entry->key == NULL) return false;
+    if (IS_NIL(entry->key)) return false;
 
     *value = entry->value;
     return true;
@@ -102,14 +102,14 @@ static void adjustCapacity(Table* table, int capacity) {
     Entry* entries = ALLOCATE(Entry, capacity);
 
     for (int i = 0; i < capacity; i++) {
-        entries[i].key = NULL;
+        entries[i].key = EMPTY_VAL;
         entries[i].value = NIL_VAL;
     }
 
     table->count = 0; // NOTE: 墓標エントリがカットされることで，エントリ数も変化する可能性があるため再計算．
     for (int i = 0; i < table->capacity; i++) {
         Entry* entry = &table->entries[i]; // 古いエントリ配列
-        if (entry->key == NULL) continue;
+        if (IS_EMPTY(entry->key)) continue;
 
         Entry* dest = findEntry(entries, capacity, entry->key); // 古いエントリの，新しいエントリ配列における格納場所
         dest->key = entry->key;
@@ -128,14 +128,14 @@ static void adjustCapacity(Table* table, int capacity) {
  *
  * @return true: 新規エントリーの追加, false: 既存のエントリーの上書き
  */
-bool tableSet(Table* table, ObjString* key, Value value) {
+bool tableSet(Table* table, Value key, Value value) {
     if (table->count + 1 > table->capacity * TABLE_MAX_LOAD) {
         int capacity = GROW_CAPACITY(table->capacity);
         adjustCapacity(table, capacity);
     }
 
     Entry* entry = findEntry(table->entries, table->capacity, key);
-    bool isNewKey = entry->key == NULL;
+    bool isNewKey = IS_EMPTY(entry->key);
 
     // NOTE: 墓標エントリの場合は，既にカウント済みなのでインクリメントしない．
     if (isNewKey && IS_NIL(entry->value)) table->count++;
@@ -145,11 +145,11 @@ bool tableSet(Table* table, ObjString* key, Value value) {
     return isNewKey;
 }
 
-bool tableDelete(Table* table, ObjString* key) {
+bool tableDelete(Table* table, Value key) {
     if (table->count == 0) return false;
 
     Entry* entry = findEntry(table->entries, table->capacity, key);
-    if (entry->key == NULL) return false;
+    if (IS_EMPTY(entry->key)) return false;
 
     /**
      * エントリに墓標（tombstone）を立てる．
@@ -162,7 +162,7 @@ bool tableDelete(Table* table, ObjString* key) {
      *
      * NOTE: 墓標エントリは記入済みエントリとして扱うので，table->count はそのままにしておく．
      */
-    entry->key = NULL;
+    entry->key = EMPTY_VAL;
     entry->value = BOOL_VAL(true);
 
     return true;
@@ -174,7 +174,7 @@ bool tableDelete(Table* table, ObjString* key) {
 void tableAddAll(Table* from, Table* to) {
     for (int i = 0; i < from->capacity; i++) {
         Entry* entry = &from->entries[i];
-        if (entry->key != NULL) {
+        if (!IS_EMPTY(entry->key)) {
             tableSet(to, entry->key, entry->value);
         }
     }
@@ -201,19 +201,19 @@ ObjString* tableFindString(
     for (;;) {
         Entry* entry = &table->entries[index];
 
-        if (entry->key == NULL) {
-            // （墓標エントリではない，）空エントリの場合
-            if (IS_NIL(entry->value)) return NULL;
-        } else if (
+        // （墓標エントリではない，）空エントリの場合
+        if (IS_EMPTY(entry->key)) return NULL;
+
+        ObjString* string = AS_STRING(entry->key);
+        if (
             /**
              * （素早い比較）まず，長さとハッシュの比較を行う．
              * （厳密な比較）ハッシュが衝突している可能性もあるので，最後に1文字ずつ比較する．
              */
-            entry->key->length == length
-            && entry->key->hash == hash
-            && memcmp(entry->key->chars, chars, length) == 0
+            string->length == length
+            && memcmp(string->chars, chars, length) == 0
         ) {
-            return entry->key;
+            return string;
         }
 
         // 線形探針

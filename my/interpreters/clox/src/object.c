@@ -29,7 +29,7 @@ static ObjString* allocateString(
     string->length = length;
     string->chars = chars;
     string->hash = hash;
-    tableSet(&vm.strings, string, NIL_VAL); // NOTE: 値はどうでもいいので nil を使う．
+    tableSet(&vm.strings, OBJ_VAL(string), NIL_VAL); // NOTE: 値はどうでもいいので nil を使う．
     return string;
 }
 
