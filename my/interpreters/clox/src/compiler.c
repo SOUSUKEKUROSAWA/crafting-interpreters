@@ -149,7 +149,12 @@ static void endCompiler() {
 #endif
 }
 
+/**
+ * 再帰的に呼び出される可能性のある関数を前方宣言しておく．
+ */
 static void expression();
+static void statement();
+static void declaration();
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
@@ -312,6 +317,16 @@ static void expression() {
     parsePrecedence(PREC_ASSIGNMENT);
 }
 
+static void declaration() {
+    statement();
+}
+
+static void statement() {
+    if (match(TOKEN_PRINT)) {
+        printStatement();
+    }
+}
+
 bool compile(const char* source, Chunk* chunk) {
     initScanner(source);
     compilingChunk = chunk;
@@ -319,8 +334,11 @@ bool compile(const char* source, Chunk* chunk) {
     parser.panicMode = false;
 
     advance();
-    expression();
-    consume(TOKEN_EOF, "Expect end of expression.");
+
+    while (!match(TOKEN_EOF)) {
+        declaration();
+    }
+
     endCompiler();
     return !parser.hadError;
 }
