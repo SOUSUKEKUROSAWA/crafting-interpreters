@@ -38,10 +38,12 @@ static void runtimeError(const char* format, ...) {
 void initVM() {
     resetStack();
     vm.objects = NULL;
+    initTable(&vm.globals);
     initTable(&vm.strings);
 }
 
 void freeVM() {
+    freeTable(&vm.globals);
     freeTable(&vm.strings);
     freeObjects();
 }
@@ -110,6 +112,11 @@ static InterpretResult run() {
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 
 /**
+ * 定数プールから取得した値を文字列として読みだす．
+ */
+#define READ_STRING() AS_STRING(READ_CONSTANT())
+
+/**
  * NOTE: プリプロセッサは演算子もテキストトークンとして受け取るので，
  *       引数に渡すことができる．
  * NOTE: マクロは，テキストをコードとしてそのまま展開するだけなので，
@@ -156,6 +163,13 @@ static InterpretResult run() {
             case OP_TRUE: push(BOOL_VAL(true)); break;
             case OP_FALSE: push(BOOL_VAL(false)); break;
             case OP_POP: pop(); break;
+            case OP_DEFINE_GLOBAL: {
+                ObjString* name = READ_STRING(); // オペランドの読み出し
+                tableSet(&vm.globals, name, peek(0));
+                // NOTE: REPL セッションでの利便性維持のため，変数が定義済みかどうかをチェックしない． ＝ 変数の再定義を許容する．
+                pop(); // NOTE: ガベージコレクション対策のため，ハッシュ表に値（peek(0)）が追加し終わってからポップする．
+                break;
+            }
             case OP_EQUAL: {
                 Value b = pop();
                 Value a = pop();
@@ -204,6 +218,7 @@ static InterpretResult run() {
 
 #undef READ_BYTE
 #undef READ_CONSTANT
+#undef READ_STRING
 #undef BINARY_OP
 }
 

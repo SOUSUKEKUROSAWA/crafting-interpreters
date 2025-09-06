@@ -173,6 +173,31 @@ static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
 /**
+ * 所与の識別子トークンの字句をチャンクの定数表に文字列として追加する．
+ *
+ * @return 識別子が格納された定数表のインデックス
+ *
+ * @note 文字列全体は，オペランドとしてバイトコードのストリームに含めるには大きすぎるので，
+ *       代わりに定数表のインデックスによって参照する．
+ */
+static uint8_t identifierConstant(Token* name) {
+    return makeConstant(
+        OBJ_VAL(
+            copyString(name->start, name->length)
+        )
+    );
+}
+
+static uint8_t parseVariable(const char* errorMessage) {
+    consume(TOKEN_IDENTIFIER, errorMessage);
+    return identifierConstant(&parser.previous);
+}
+
+static void defineVariable(uint8_t global) {
+    emitBytes(OP_DEFINE_GLOBAL, global);
+}
+
+/**
  * WARNING: 左側のオペランド全体がコンパイルされ，
  *          それに続く中置演算子も消費されていることを前提とする．
  */
@@ -331,6 +356,22 @@ static void expression() {
     parsePrecedence(PREC_ASSIGNMENT);
 }
 
+static void varDeclaration() {
+    uint8_t global = parseVariable("Expect variable name.");
+
+    if (match(TOKEN_EQUAL)) {
+        // 明示的な初期化式
+        expression();
+    } else {
+        // 暗黙のうちに nil で初期化
+        emitByte(OP_NIL);
+    }
+
+    consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+
+    defineVariable(global);
+}
+
 /**
  * 式文．
  * 式を評価して結果を棄てる．
@@ -380,7 +421,11 @@ static void synchronize() {
 }
 
 static void declaration() {
+    if (match(TOKEN_VAR)) {
+        varDeclaration();
+    } else {
     statement();
+    }
 
     if (parser.panicMode) synchronize();
 }

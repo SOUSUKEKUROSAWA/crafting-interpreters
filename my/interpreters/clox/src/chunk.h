@@ -14,6 +14,7 @@ typedef enum {
     OP_TRUE, // true をスタックにプッシュする．
     OP_FALSE, // false をスタックにプッシュする．
     OP_POP, // スタックから値をポップする．
+    OP_DEFINE_GLOBAL, // グローバル変数を保存する．@operand: 保存する字句が格納されている定数表のインデックス
     OP_EQUAL, // == （NOTE: OP_NOT と組み合わせることで != を表現可能）
     OP_GREATER, // > （NOTE: OP_NOT と組み合わせることで <= を表現可能）
     OP_LESS, // < （NOTE: OP_NOT と組み合わせることで >= を表現可能）
