@@ -331,6 +331,20 @@ static void expression() {
     parsePrecedence(PREC_ASSIGNMENT);
 }
 
+/**
+ * 式文．
+ * 式を評価して結果を棄てる．
+ *
+ * e.g.
+ *  1 + 2;
+ *  sample();
+ */
+static void expressionStatement() {
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
+    emitByte(OP_POP);
+}
+
 static void printStatement() {
     expression();
     consume(TOKEN_SEMICOLON, "Expect ';' after value.");
@@ -344,6 +358,8 @@ static void declaration() {
 static void statement() {
     if (match(TOKEN_PRINT)) {
         printStatement();
+    } else {
+        expressionStatement();
     }
 }
 
