@@ -87,7 +87,6 @@ static void concatenate() {
     push(OBJ_VAL(result));
 }
 
-// NOTE: VM のコアとなる関数
 static InterpretResult run() {
 
 /**
@@ -100,14 +99,16 @@ static InterpretResult run() {
  * 呼び出しのオーバーヘッドがあるが，型安全でデバッグもしやすい．
  */
 
-// 現在 ip が指している命令を読みだしてから，ip を１つ次に進める．
+/**
+ * 現在 ip が指している命令を読みだしてから，ip を１つ次に進める．
+ */
 #define READ_BYTE() (*vm.ip++)
 
 /**
  * 現在 ip が指している命令を読みだし，
  * その値をインデックスとして持つチャンクの定数プールから，
  * 対応する値を取り出す．
- * （ip を１つ次に進め）
+ * （ip を１つ次に進める）
  */
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 

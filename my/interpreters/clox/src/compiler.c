@@ -166,6 +166,7 @@ static void endCompiler() {
 /**
  * 再帰的に呼び出される可能性のある関数を前方宣言しておく．
  */
+
 static void expression();
 static void statement();
 static void declaration();
@@ -424,7 +425,7 @@ static void declaration() {
     if (match(TOKEN_VAR)) {
         varDeclaration();
     } else {
-    statement();
+        statement();
     }
 
     if (parser.panicMode) synchronize();
