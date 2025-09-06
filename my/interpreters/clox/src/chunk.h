@@ -22,6 +22,7 @@ typedef enum {
     OP_DIVIDE, // 除算
     OP_NOT, // (!) 否定
     OP_NEGATE, // (-) 正負逆転演算．
+    OP_PRINT, // スタックから値をポップして出力する．
     OP_RETURN, // 現在の関数からリターンする．
 } OpCode;
 

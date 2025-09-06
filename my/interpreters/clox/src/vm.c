@@ -189,9 +189,13 @@ static InterpretResult run() {
                 }
                 push(NUMBER_VAL(-AS_NUMBER(pop())));
                 break;
-            case OP_RETURN: {
+            case OP_PRINT: {
                 printValue(pop());
                 printf("\n");
+                // NOTE: 式ではなく文なので，何もプッシュしない（＝ Stack Effect がゼロ）．
+                break;
+            }
+            case OP_RETURN: {
                 return INTERPRET_OK;
             }
         }

@@ -104,6 +104,20 @@ static void consume(TokenType type, const char* message) {
     errorAtCurrent(message);
 }
 
+static bool check(TokenType type) {
+    return parser.current.type == type;
+}
+
+/**
+ * @return true: 指定されたトークン型にマッチした（トークンも消費する）．
+ *         false: 指定されたトークン型にマッチしなかった（トークンは消費しない）．
+ */
+static bool match(TokenType type) {
+    if (!check(type)) return false;
+    advance();
+    return true;
+}
+
 /**
  * @param byte 命令コード（opcode）または命令のオペランド（operand）
  */
@@ -315,6 +329,12 @@ static void parsePrecedence(Precedence precedence) {
 
 static void expression() {
     parsePrecedence(PREC_ASSIGNMENT);
+}
+
+static void printStatement() {
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+    emitByte(OP_PRINT);
 }
 
 static void declaration() {
