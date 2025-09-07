@@ -181,6 +181,21 @@ static InterpretResult run() {
                 pop(); // NOTE: ガベージコレクション対策のため，ハッシュ表に値（peek(0)）が追加し終わってからポップする．
                 break;
             }
+            case OP_SET_GLOBAL: {
+                ObjString* name = READ_STRING();
+                if (tableSet(&vm.globals, name, peek(0))) {
+                    /**
+                     * 新規エントリへの追加の場合，変数が未定義ということなので，
+                     * 追加したエントリをクリーンアップしたうえで，ランタイムエラーにする．
+                     * NOTE: 暗黙の変数宣言は行わない．
+                     */
+                    tableDelete(&vm.globals, name);
+                    runtimeError("Undefined variable '%s'.", name->chars);
+                    return INTERPRET_COMPILE_ERROR;
+                }
+                // NOTE: 代入は式なので，大きな式の中にネストしている可能性を考慮して，スタックからポップしない（残しておく）．
+                break;
+            }
             case OP_EQUAL: {
                 Value b = pop();
                 Value a = pop();

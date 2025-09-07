@@ -57,6 +57,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return constantInstruction("OP_GET_GLOBAL", chunk, offset);
         case OP_DEFINE_GLOBAL:
             return constantInstruction("OP_DEFINE_GLOBAL", chunk, offset);
+        case OP_SET_GLOBAL:
+            return constantInstruction("OP_SET_GLOBAL", chunk, offset);
 
         /**
          * NOTE: 算術演算子（+ など）はスタックからオペランドを取得するが，

@@ -35,9 +35,9 @@ typedef enum {
 } Precedence;
 
 /**
- * 引数を取らず，何も返さない関数へのポインタ
+ * 引数に canAssign を取り，何も返さない関数へのポインタ
  */
-typedef void (*ParseFn)();
+typedef void (*ParseFn)(bool canAssign);
 
 typedef struct {
     ParseFn prefix; // 与えられたトークン型で始まる前置式（e.g. -a, !a）をコンパイルする関数
@@ -202,7 +202,7 @@ static void defineVariable(uint8_t global) {
  * WARNING: 左側のオペランド全体がコンパイルされ，
  *          それに続く中置演算子も消費されていることを前提とする．
  */
-static void binary() {
+static void binary(bool canAssign) {
     TokenType operatorType = parser.previous.type;
     ParseRule* rule = getRule(operatorType);
 
@@ -227,7 +227,7 @@ static void binary() {
     }
 }
 
-static void literal() {
+static void literal(bool canAssign) {
     switch (parser.previous.type) {
         case TOKEN_FALSE: emitByte(OP_FALSE); break;
         case TOKEN_NIL: emitByte(OP_NIL); break;
@@ -240,7 +240,7 @@ static void literal() {
  * WARNING: "(" のトークンがすでに消費され，previous に格納されていることを前提とする．
  * NOTE: グルーピング自体に実行時のセマンティクスはないので，バイトコードは出力しない．
  */
-static void grouping() {
+static void grouping(bool canAssign) {
     expression();
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
@@ -248,12 +248,12 @@ static void grouping() {
 /**
  * WARNING: 数値リテラルのトークンがすでに消費され，previous に格納されていることを前提とする．
  */
-static void number() {
+static void number(bool canAssign) {
     double value = strtod(parser.previous.start, NULL); // 文字列を double 型に変換
     emitConstant(NUMBER_VAL(value));
 }
 
-static void string() {
+static void string(bool canAssign) {
     emitConstant(OBJ_VAL(
         // 先頭と末尾から引用符（"）を除外するために +1, -2 をする．
         copyString(
@@ -263,16 +263,27 @@ static void string() {
     ));
 }
 
-static void namedVariable(Token name) {
+/**
+ * @param canAssign true: 現在の優先度が代入が許されるほど低い．
+ *        e.g. a * b = c + d; の場合は false．
+ */
+static void namedVariable(Token name, bool canAssign) {
     uint8_t arg = identifierConstant(&name);
-    emitBytes(OP_GET_GLOBAL, arg);
+
+    if (canAssign && match(TOKEN_EQUAL)) {
+        // = が見つかれば，代入式（セッター）としてコンパイルする．
+        expression();
+        emitBytes(OP_SET_GLOBAL, arg);
+    } else {
+        emitBytes(OP_GET_GLOBAL, arg);
+    }
 }
 
-static void variable() {
-    namedVariable(parser.previous);
+static void variable(bool canAssign) {
+    namedVariable(parser.previous, canAssign);
 }
 
-static void unary() {
+static void unary(bool canAssign) {
     TokenType operatorType = parser.previous.type;
 
     parsePrecedence(PREC_UNARY);
@@ -349,7 +360,8 @@ static void parsePrecedence(Precedence precedence) {
         error("Expect expression.");
         return;
     }
-    prefixRule();
+    bool canAssign = precedence <= PREC_ASSIGNMENT;
+    prefixRule(canAssign);
 
     /**
      * 中置式の解析
@@ -358,7 +370,12 @@ static void parsePrecedence(Precedence precedence) {
     while (precedence <= getRule(parser.current.type)->precedence) {
         advance();
         ParseFn infixRule = getRule(parser.previous.type)->infix;
-        infixRule();
+        infixRule(canAssign);
+    }
+
+    // NOTE: a * b = c + d; のような式をエラーにするための処理．
+    if (canAssign && match(TOKEN_EQUAL)) {
+        error("Invalid assignment target.");
     }
 }
 
