@@ -45,7 +45,22 @@ typedef struct {
     Precedence precedence; // 与えられたトークン型を演算子として使う中置式（e.g. a + b, a / b）の優先順位
 } ParseRule;
 
+/**
+ * locals 配列内の個々のローカル変数
+ */
+typedef struct {
+    Token name;
+    int depth; // このローカル変数を宣言したブロックを囲んでいるブロックの数（scopeDepth）
+} Local;
+
+typedef struct {
+    Local locals[UINT8_COUNT]; // コンパイル時点でスコープに入る全てのローカル変数を格納する配列．NOTE: オペランドが 1 バイトまでと決まっているので，要素数にも固定の上限（UNITS_COUNT）が存在する．
+    int localCount; // スコープ内のローカル変数の個数
+    int scopeDepth; // 今コンパイルしているコードを囲んでいるブロックの数（e.g. 0 = グローバルスコープ，1 = トップレベルブロック）
+} Compiler;
+
 static Parser parser;
+Compiler* current = NULL;
 Chunk* compilingChunk;
 
 static Chunk* currentChunk() {
@@ -151,6 +166,12 @@ static uint8_t makeConstant(Value value) {
 
 static void emitConstant(Value value) {
     emitBytes(OP_CONSTANT, makeConstant(value));
+}
+
+static void initCompiler(Compiler* compiler) {
+    compiler->localCount = 0;
+    compiler->scopeDepth = 0;
+    current = compiler;
 }
 
 static void endCompiler() {
@@ -467,6 +488,8 @@ static void statement() {
 
 bool compile(const char* source, Chunk* chunk) {
     initScanner(source);
+    Compiler compiler;
+    initCompiler(&compiler);
     compilingChunk = chunk;
     parser.hadError = false;
     parser.panicMode = false;
