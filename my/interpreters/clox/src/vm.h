@@ -25,7 +25,8 @@ typedef struct {
     Value stack[STACK_MAX]; // 生成された一時的な値を追跡管理するためのスタック
     Value* stackTop; // 次にプッシュされる値の行き先（ポインタ）
 
-    Table globals; // グローバル変数の一覧（ハッシュ表）
+    Table globalNames;
+    ValueArray globalValues;
 
     /**
      * NOTE: インターン化とは

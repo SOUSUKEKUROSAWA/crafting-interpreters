@@ -182,11 +182,17 @@ static void parsePrecedence(Precedence precedence);
  *       代わりに定数表のインデックスによって参照する．
  */
 static uint8_t identifierConstant(Token* name) {
-    return makeConstant(
-        OBJ_VAL(
-            copyString(name->start, name->length)
-        )
-    );
+    Value index;
+    ObjString* identifier = copyString(name->start, name->length);
+    if (tableGet(&vm.globalNames, identifier, &index)) {
+        return (uint8_t)AS_NUMBER(index);
+    }
+
+    uint8_t newIndex = (uint8_t)vm.globalValues.count;
+    writeValueArray(&vm.globalValues, UNDEFINED_VAL);
+
+    tableSet(&vm.globalNames, identifier, NUMBER_VAL((double)newIndex));
+    return newIndex;
 }
 
 static uint8_t parseVariable(const char* errorMessage) {

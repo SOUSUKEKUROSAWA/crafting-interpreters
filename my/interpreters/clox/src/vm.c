@@ -38,12 +38,14 @@ static void runtimeError(const char* format, ...) {
 void initVM() {
     resetStack();
     vm.objects = NULL;
-    initTable(&vm.globals);
+    initTable(&vm.globalNames);
+    initValueArray(&vm.globalValues);
     initTable(&vm.strings);
 }
 
 void freeVM() {
-    freeTable(&vm.globals);
+    freeTable(&vm.globalNames);
+    freeValueArray(&vm.globalValues);
     freeTable(&vm.strings);
     freeObjects();
 }
@@ -165,35 +167,26 @@ static InterpretResult run() {
             case OP_FALSE: push(BOOL_VAL(false)); break;
             case OP_POP: pop(); break;
             case OP_GET_GLOBAL: {
-                ObjString* name = READ_STRING(); // オペランドの読み出し
-                Value value;
-                if (!tableGet(&vm.globals, name, &value)) {
-                    runtimeError("Undefined variable '%s'.", name->chars);
-                    return INTERPRET_RUNTIME_ERROR;
+                Value value = vm.globalValues.values[READ_BYTE()];
+                if (IS_UNDEFINED(value)) {
+                  runtimeError("Undefined variable.");
+                  return INTERPRET_RUNTIME_ERROR;
                 }
                 push(value);
                 break;
             }
             case OP_DEFINE_GLOBAL: {
-                ObjString* name = READ_STRING(); // オペランドの読み出し
-                tableSet(&vm.globals, name, peek(0));
-                // NOTE: REPL セッションでの利便性維持のため，変数が定義済みかどうかをチェックしない． ＝ 変数の再定義を許容する．
-                pop(); // NOTE: ガベージコレクション対策のため，ハッシュ表に値（peek(0)）が追加し終わってからポップする．
+                vm.globalValues.values[READ_BYTE()] = pop();
                 break;
             }
             case OP_SET_GLOBAL: {
-                ObjString* name = READ_STRING();
-                if (tableSet(&vm.globals, name, peek(0))) {
-                    /**
-                     * 新規エントリへの追加の場合，変数が未定義ということなので，
-                     * 追加したエントリをクリーンアップしたうえで，ランタイムエラーにする．
-                     * NOTE: 暗黙の変数宣言は行わない．
-                     */
-                    tableDelete(&vm.globals, name);
-                    runtimeError("Undefined variable '%s'.", name->chars);
-                    return INTERPRET_COMPILE_ERROR;
+                uint8_t index = READ_BYTE();
+                if (IS_UNDEFINED(vm.globalValues.values[index])) {
+                  runtimeError("Undefined variable.");
+                  return INTERPRET_RUNTIME_ERROR;
                 }
                 // NOTE: 代入は式なので，大きな式の中にネストしている可能性を考慮して，スタックからポップしない（残しておく）．
+                vm.globalValues.values[index] = peek(0);
                 break;
             }
             case OP_EQUAL: {
