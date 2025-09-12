@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -54,7 +55,7 @@ typedef struct {
 } Local;
 
 typedef struct {
-    Local locals[UINT8_COUNT]; // コンパイル時点でスコープに入る全てのローカル変数を格納する配列．NOTE: オペランドが 1 バイトまでと決まっているので，要素数にも固定の上限（UNITS_COUNT）が存在する．
+    Local locals[UINT8_COUNT]; // コンパイル時点でスコープに入る全てのローカル変数を格納する配列．NOTE: オペランドが 1 バイトまでと決まっているので，要素数にも固定の上限（UINT8_COUNT）が存在する．
     int localCount; // スコープ内のローカル変数の個数
     int scopeDepth; // 今コンパイルしているコードを囲んでいるブロックの数（e.g. 0 = グローバルスコープ，1 = トップレベルブロック）
 } Compiler;
@@ -190,6 +191,15 @@ static void beginScope() {
 
 static void endScope() {
     current->scopeDepth--;
+
+    // 今抜け出たローカルスコープ内のローカル変数を全てポップする．
+    while (
+        current->localCount > 0
+        && current->locals[current->localCount - 1].depth > current->scopeDepth
+    ) {
+        emitByte(OP_POP);
+        current->localCount--;
+    }
 }
 
 /**
@@ -218,12 +228,74 @@ static uint8_t identifierConstant(Token* name) {
     );
 }
 
+static bool identifierEqual(Token* a, Token* b) {
+    if (a->length != b->length) return false; // まず簡易比較
+    return memcmp(a->start, b->start, a->length) == 0;
+}
+
+static void addLocal(Token name) {
+    if (current->localCount == UINT8_COUNT) {
+        error("Too many local variable in function.");
+        return;
+    }
+
+    Local* local = &current->locals[current->localCount++];
+
+    local->name = name;
+    local->depth = current->scopeDepth;
+}
+
+/**
+ * ローカル変数を「現在のスコープにある変数のリスト」に追加する．
+ */
+static void declareVariable() {
+    /**
+     * NOTE: グローバル変数は遅延束縛されるので，
+     *       コンパイラでは，どの宣言を見たかの追跡管理は行わない．
+     */
+    if (current->scopeDepth == 0) return;
+
+    Token* name = &parser.previous;
+
+    // 同じローカルスコープ内での変数の再宣言をエラーにする．
+    for (int i = current->localCount - 1; i >= 0; i--) {
+        Local* local = &current->locals[i];
+
+        if (local->depth != -1 && local->depth < current->scopeDepth) {
+            break;
+        }
+
+        if (identifierEqual(name, &local->name)) {
+            error("Already a variable with this name in this scope.");
+        }
+    }
+
+    addLocal(*name);
+}
+
 static uint8_t parseVariable(const char* errorMessage) {
     consume(TOKEN_IDENTIFIER, errorMessage);
+
+    declareVariable();
+
+    /**
+     * 実行時にはローカルを名前で参照できないので，
+     * ローカルスコープ内の宣言ならば，ダミーのインデックスを返す．
+     */
+    if (current->scopeDepth > 0) return 0;
+
     return identifierConstant(&parser.previous);
 }
 
 static void defineVariable(uint8_t global) {
+    /**
+     * NOTE: この時点ですでに変数の値はスタックトップに置かれているため，
+     *       ローカルスコープ内であれば，これ以上するべきことは何もない．
+     */
+    if (current->scopeDepth > 0) {
+        return;
+    }
+
     emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
