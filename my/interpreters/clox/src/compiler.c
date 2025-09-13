@@ -233,6 +233,24 @@ static bool identifierEqual(Token* a, Token* b) {
     return memcmp(a->start, b->start, a->length) == 0;
 }
 
+/**
+ * @return -1:      name に一致する変数が見つからなかった．
+ *         -1 以外: name に一致する識別子で，一番最後（最新）に宣言された変数が置かれているインデックス．
+ *
+ * @note シャドーイング
+ *       ローカル変数の配列を後ろから辿っていくことで，一番最後（最新）に宣言された変数のインデックスを返す．
+ */
+static int resolveLocal(Compiler* compiler, Token* name) {
+    for (int i = compiler->localCount - 1; i >= 0; i--) {
+        Local* local = &compiler->locals[i];
+        if (identifierEqual(name, &local->name)) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 static void addLocal(Token name) {
     if (current->localCount == UINT8_COUNT) {
         error("Too many local variable in function.");
@@ -369,14 +387,28 @@ static void string(bool canAssign) {
  *        e.g. a * b = c + d; の場合は false．
  */
 static void namedVariable(Token name, bool canAssign) {
-    uint8_t arg = identifierConstant(&name);
+    uint8_t getOp, setOp;
+    int arg = resolveLocal(current, &name);
+
+    if (arg != -1) {
+        getOp = OP_GET_LOCAL;
+        setOp = OP_SET_LOCAL;
+    } else {
+        arg = identifierConstant(&name);
+        getOp = OP_GET_GLOBAL;
+        setOp = OP_SET_GLOBAL;
+    }
 
     if (canAssign && match(TOKEN_EQUAL)) {
         // = が見つかれば，代入式（セッター）としてコンパイルする．
         expression();
-        emitBytes(OP_SET_GLOBAL, arg);
+        /**
+         * NOTE: コンパイラにおける locals と，VMが実行時に持つスタックは全く同じレイアウトになるので，
+         *       locals のインデックスをそのまま使える．
+         */
+        emitBytes(setOp, (uint8_t)arg);
     } else {
-        emitBytes(OP_GET_GLOBAL, arg);
+        emitBytes(getOp, (uint8_t)arg);
     }
 }
 
