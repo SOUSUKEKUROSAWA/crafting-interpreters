@@ -28,6 +28,19 @@ static int simpleInstruction(const char* name, int offset) {
     return offset + 1;
 }
 
+/**
+ * チャンクに値が現れない命令をデバッグする（バイトコードをそのまま出力する）．
+ *
+ * e.g. コンパイラで完結するローカル変数名など
+ */
+static int byteInstruction(const char* name, Chunk* chunk, int offset) {
+    uint8_t slot = chunk->code[offset + 1];
+    printf("%-16s %4d\n", name, slot);
+
+    // NOTE: opcode (1 byte) + operand (1 byte) = 2 byte
+    return offset + 2;
+}
+
 int disassembleInstruction(Chunk* chunk, int offset) {
     printf("%04d ", offset);
 
@@ -53,6 +66,10 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_FALSE", offset);
         case OP_POP:
             return simpleInstruction("OP_POP", offset);
+        case OP_GET_LOCAL:
+            return byteInstruction("OP_GET_LOCAL", chunk, offset);
+        case OP_SET_LOCAL:
+            return byteInstruction("OP_SET_LOCAL", chunk, offset);
         case OP_GET_GLOBAL:
             return constantInstruction("OP_GET_GLOBAL", chunk, offset);
         case OP_DEFINE_GLOBAL:
