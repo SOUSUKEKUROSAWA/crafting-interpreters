@@ -51,7 +51,7 @@ typedef struct {
  */
 typedef struct {
     Token name;
-    int depth; // このローカル変数を宣言したブロックを囲んでいるブロックの数（scopeDepth）
+    int depth; // このローカル変数を宣言したブロックを囲んでいるブロックの数（scopeDepth）．NOTE: -1 の場合は未初期化状態であることを表す．
 } Local;
 
 typedef struct {
@@ -244,6 +244,20 @@ static int resolveLocal(Compiler* compiler, Token* name) {
     for (int i = compiler->localCount - 1; i >= 0; i--) {
         Local* local = &compiler->locals[i];
         if (identifierEqual(name, &local->name)) {
+            /**
+             * 以下のようなエッジケースをエラーにするための分岐．
+             *
+             * e.g.
+             * {
+             *      var a = "outer";
+             *      {
+             *          var a = a;
+             *      }
+             * }
+             */
+            if (local->depth == -1) {
+                error("Cant't read local variable in its own initializer.");
+            }
             return i;
         }
     }
@@ -260,7 +274,7 @@ static void addLocal(Token name) {
     Local* local = &current->locals[current->localCount++];
 
     local->name = name;
-    local->depth = current->scopeDepth;
+    local->depth = -1; // 未初期化状態を表す．
 }
 
 /**
@@ -305,12 +319,17 @@ static uint8_t parseVariable(const char* errorMessage) {
     return identifierConstant(&parser.previous);
 }
 
+static void markInitialized() {
+    current->locals[current->localCount - 1].depth = current->scopeDepth;
+}
+
 static void defineVariable(uint8_t global) {
     /**
      * NOTE: この時点ですでに変数の値はスタックトップに置かれているため，
-     *       ローカルスコープ内であれば，これ以上するべきことは何もない．
+     *       ローカルスコープ内であれば，命令コードの出力などを行う必要はない．
      */
     if (current->scopeDepth > 0) {
+        markInitialized();
         return;
     }
 
