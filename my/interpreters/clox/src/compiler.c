@@ -386,7 +386,7 @@ static void defineVariable(uint8_t global) {
 
 static void and_(bool canAssign) {
     /**
-     * NOTE: 短絡の実装
+     * NOTE: AND 短絡の実装
      *       呼び出された時点で左辺の式はすでにコンパイル済み．
      *       つまり，左辺の評価の結果がスタックトップに置かれている．
      *       その値が偽性ならその時点で評価を終了し，右辺の評価をスキップし，
@@ -396,7 +396,7 @@ static void and_(bool canAssign) {
 
     /**
      * 条件値のクリア．
-     * 
+     *
      * ここに処理が来ている時点で左辺は true のため，
      * 右辺の結果が and 式全体の結果と等しくなる．
      * だから，左辺の結果はクリアして問題ない．
@@ -460,6 +460,35 @@ static void grouping(bool canAssign) {
 static void number(bool canAssign) {
     double value = strtod(parser.previous.start, NULL); // 文字列を double 型に変換
     emitConstant(NUMBER_VAL(value));
+}
+
+static void or_(bool canAssign) {
+    /**
+     * NOTE: OR 短絡の実装
+     *       呼び出された時点で左辺の式はすでにコンパイル済み．
+     *       つまり，左辺の評価の結果がスタックトップに置かれている．
+     *       その値が偽性なら endJump だけスキップし，右辺の評価に進む．
+     *       その値が真性なら endJump に進み，右辺の評価をスキップする．
+     *
+     * WARNING: OP_JUMP_IF_TRUE のような命令を用意すれば，and_() と同じ処理数で記述できるので，
+     *          パフォーマンス観点ではその方が Better だが，命令を増やさずとも実装可能ということを示すために，
+     *          あえて，この形で実装している．
+     */
+    int elseJump = emitJump(OP_JUMP_IF_FALSE);
+    int endJump = emitJump(OP_JUMP);
+    patchJump(elseJump);
+
+    /**
+     * 条件値のクリア．
+     *
+     * ここに処理が来ている時点で左辺は false のため，
+     * 右辺の結果が or 式全体の結果と等しくなる．
+     * だから，左辺の結果はクリアして問題ない．
+     */
+    emitByte(OP_POP);
+    parsePrecedence(PREC_OR);
+
+    patchJump(endJump);
 }
 
 static void string(bool canAssign) {
@@ -553,7 +582,7 @@ ParseRule rules[] = {
     [TOKEN_FUN]           = {NULL,     NULL,   PREC_NONE},
     [TOKEN_IF]            = {NULL,     NULL,   PREC_NONE},
     [TOKEN_NIL]           = {literal,  NULL,   PREC_NONE},
-    [TOKEN_OR]            = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_OR]            = {NULL,     or_,    PREC_OR},
     [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE},
     [TOKEN_RETURN]        = {NULL,     NULL,   PREC_NONE},
     [TOKEN_SUPER]         = {NULL,     NULL,   PREC_NONE},
