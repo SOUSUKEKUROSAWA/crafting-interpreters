@@ -384,6 +384,29 @@ static void defineVariable(uint8_t global) {
     emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
+static void and_(bool canAssign) {
+    /**
+     * NOTE: 短絡の実装
+     *       呼び出された時点で左辺の式はすでにコンパイル済み．
+     *       つまり，左辺の評価の結果がスタックトップに置かれている．
+     *       その値が偽性ならその時点で評価を終了し，右辺の評価をスキップし，
+     *       左辺の結果を and 式全体の結果としてスタックに残す．
+     */
+    int endJump = emitJump(OP_JUMP_IF_FALSE);
+
+    /**
+     * 条件値のクリア．
+     * 
+     * ここに処理が来ている時点で左辺は true のため，
+     * 右辺の結果が and 式全体の結果と等しくなる．
+     * だから，左辺の結果はクリアして問題ない．
+     */
+    emitByte(OP_POP);
+    parsePrecedence(PREC_AND);
+
+    patchJump(endJump);
+}
+
 /**
  * WARNING: 左側のオペランド全体がコンパイルされ，
  *          それに続く中置演算子も消費されていることを前提とする．
@@ -522,7 +545,7 @@ ParseRule rules[] = {
     [TOKEN_IDENTIFIER]    = {variable, NULL,   PREC_NONE},
     [TOKEN_STRING]        = {string,   NULL,   PREC_NONE},
     [TOKEN_NUMBER]        = {number,   NULL,   PREC_NONE},
-    [TOKEN_AND]           = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_AND]           = {NULL,     and_,   PREC_AND},
     [TOKEN_CLASS]         = {NULL,     NULL,   PREC_NONE},
     [TOKEN_ELSE]          = {NULL,     NULL,   PREC_NONE},
     [TOKEN_FALSE]         = {literal,  NULL,   PREC_NONE},
