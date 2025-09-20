@@ -31,6 +31,7 @@ typedef enum {
     OP_PRINT, // スタックから値をポップして出力する．
     OP_JUMP, // 特定の数だけ命令をスキップする．@operand: スキップする命令数（※ 2 バイト）
     OP_JUMP_IF_FALSE, // スタックから取得した値が Falsey であれば，特定の数だけ命令をスキップする．@operand: スキップする命令数（※ 2 バイト）
+    OP_LOOP, // 特定の数だけ命令を巻き戻す．@operand: 巻き戻す命令数（※ 2 バイト）
     OP_RETURN, // 現在の関数からリターンする．
 } OpCode;
 

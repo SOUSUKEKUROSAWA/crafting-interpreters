@@ -275,7 +275,13 @@ static InterpretResult run() {
                 /**
                  * NOTE: この命令は，if 文以外の論理演算子でも使われるため，
                  *       式か文かが事前に決まらないので，この時点では条件値をポップしない．
+                 * WARNING: つまり，呼び出し元の状況に応じて OP_POP 命令を漏れなく出力する必要がある．
                  */
+                break;
+            }
+            case OP_LOOP: {
+                uint16_t offset = READ_SHORT();
+                vm.ip -= offset;
                 break;
             }
             case OP_RETURN: {
