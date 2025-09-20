@@ -29,6 +29,7 @@ typedef enum {
     OP_NOT, // (!) 否定
     OP_NEGATE, // (-) 正負逆転演算．
     OP_PRINT, // スタックから値をポップして出力する．
+    OP_JUMP_IF_FALSE, // スタックから取得した値が Falsey であれば，特定の数だけ命令をスキップする．@operand: スキップする命令数
     OP_RETURN, // 現在の関数からリターンする．
 } OpCode;
 

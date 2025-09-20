@@ -142,6 +142,21 @@ static void emitByte(uint8_t byte) {
 }
 
 /**
+ * ジャンプが必要な命令のバイトコードを出力する．
+ *
+ * @return チャンクに出力した命令へのオフセット
+ *
+ * @note どこまでジャンプするかはコードの先をコンパイルするまでわからないため，
+ *       この関数では，プレースホルダで 2 バイト長のオペランドを埋めておくのみ．
+ */
+static int emitJump(uint8_t instruction) {
+    emitByte(instruction);
+    emitByte(0xff);
+    emitByte(0xff);
+    return currentChunk()->count - 2;
+}
+
+/**
  * @param byte1 命令コード（opcode）
  * @param byte2 命令のオペランド（operand）
  */
@@ -167,6 +182,39 @@ static uint8_t makeConstant(Value value) {
 
 static void emitConstant(Value value) {
     emitBytes(OP_CONSTANT, makeConstant(value));
+}
+
+/**
+ * JUMP系の命令を実行する際にどのくらいジャンプする必要があるかを計算し，
+ * 所与の offset の位置にあるオペランドを置き換える．
+ */
+static void patchJump(int offset) {
+    /**
+     * ジャンプする距離の計算
+     *
+     * ジャンプ元：offset
+     * ジャンプ先：currentChunk()->count NOTE: この関数が呼ばれるのは，ジャンプによって着地すべき次の命令を出力する直前なので，ジャンプ先は "現在の" バイトコードの位置になる．
+     * NOTE: -2 でジャンプオフセット自身のバイトコードの長さを差し引く．
+     */
+    int jump = currentChunk()->count - offset -2;
+
+    if (jump > UINT16_MAX) {
+        error("Too much code to jump over.");
+    }
+
+    /**
+     * ジャンプ距離を表すオペランドを上書きする．
+     *
+     * e.g. (0x1234 >> 8) & 0xff
+     *
+     * 1. 0x1234    0001 0010 0011 0100 （2進数表記）
+     * 2. >> 8      0000 0000 0001 0010 （＝ 右に8ビット分ずらして0でパディング）
+     * 3. & 0xff    0000 0000 0001 0010
+     *          AND 0000 0000 1111 1111
+     *            = 0000 0000 0001 0010 （＝ 下位8ビットをそのまま取り出す）
+     */
+    currentChunk()->code[offset] = (jump >> 8) & 0xff; // jump(16 bit) の上位8ビットを取り出してオペランドを上書き．
+    currentChunk()->code[offset + 1] = jump & 0xff; // jump(16 bit) の下位8ビットを取り出してオペランドを上書き．
 }
 
 static void initCompiler(Compiler* compiler) {
@@ -573,6 +621,22 @@ static void expressionStatement() {
     emitByte(OP_POP);
 }
 
+static void ifStatement() {
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
+    expression(); // 条件の結果がスタックトップに残るので，それを使って then 節の実行判定を行える．
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after 'if'.");
+
+    /**
+     * NOTE: OP_JUMP_IF_FALSE は ip に加えるオフセット（どれだけジャンプするか）をオペランドに取る．
+     *       ただし，そのオフセットは then 節をコンパイルするまで分からないため，
+     *       バックパッチ（backpatching）というテクニックを使って，一旦プレースホルダ―となるオペランドを出力（emitJump）し，
+     *       then 節をコンパイルした後に，実際のオフセットで置き換える（patchJump，後からパッチを当てるニュアンス）という手法を採る．
+     */
+    int thenJump = emitJump(OP_JUMP_IF_FALSE);
+    statement();
+    patchJump(thenJump);
+}
+
 static void printStatement() {
     expression();
     consume(TOKEN_SEMICOLON, "Expect ';' after value.");
@@ -620,6 +684,8 @@ static void declaration() {
 static void statement() {
     if (match(TOKEN_PRINT)) {
         printStatement();
+    } else if (match(TOKEN_IF)) {
+        ifStatement();
     } else if (match(TOKEN_LEFT_BRACE)) {
         beginScope();
         block();
