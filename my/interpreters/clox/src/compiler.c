@@ -633,8 +633,20 @@ static void ifStatement() {
      *       then 節をコンパイルした後に，実際のオフセットで置き換える（patchJump，後からパッチを当てるニュアンス）という手法を採る．
      */
     int thenJump = emitJump(OP_JUMP_IF_FALSE);
+    emitByte(OP_POP); // 条件が真性の場合に，スタックに残っている条件値をポップする．
     statement();
+    /**
+     * then 節を実行を終了した後に，else 節をスキップする．
+     *
+     * NOTE: 条件に関わらず必ずジャンプするので，OP_JUMP 命令を使う．
+     *       then 節が実行されない場合（Falsey だった場合）は，このジャンプ命令自体もスキップされる．
+     */
+    int elseJump = emitJump(OP_JUMP);
     patchJump(thenJump);
+    emitByte(OP_POP); // 条件が偽性の場合に，スタックに残っている条件値をポップする．
+
+    if (match(TOKEN_ELSE)) statement();
+    patchJump(elseJump);
 }
 
 static void printStatement() {

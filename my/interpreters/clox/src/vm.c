@@ -264,10 +264,18 @@ static InterpretResult run() {
                 // NOTE: 式ではなく文なので，何もプッシュしない（＝ Stack Effect がゼロ）．
                 break;
             }
+            case OP_JUMP: {
+                uint16_t offset = READ_SHORT();
+                vm.ip += offset;
+                break;
+            }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
                 if (isFalsey(peek(0))) vm.ip += offset;
-                // NOTE: まだ処理は終っていないので，条件値はポップしない．
+                /**
+                 * NOTE: この命令は，if 文以外の論理演算子でも使われるため，
+                 *       式か文かが事前に決まらないので，この時点では条件値をポップしない．
+                 */
                 break;
             }
             case OP_RETURN: {

@@ -41,6 +41,29 @@ static int byteInstruction(const char* name, Chunk* chunk, int offset) {
     return offset + 2;
 }
 
+/**
+ * @param sign 1: 順方向にジャンプ（スキップ），-1: 逆方向にジャンプ（巻き戻し）
+ */
+static int jumpInstruction(
+    const char* name,
+    int sign,
+    Chunk* chunk,
+    int offset
+) {
+    // jump: 16 bit のジャンプオフセット
+    uint16_t jump = (uint16_t)(chunk->code[offset + 1] << 8);
+    jump |= chunk->code[offset + 2]; // a |= b は a = a | b と同義．（a と b をORビット演算した結果を a に格納する．）
+
+    /**
+     * offset + 3   現在の命令の次の命令位置
+     * sign * jump  ジャンプする距離（sign が 1 or -1 かで順／逆方向が決まる．）
+     */
+    printf("%-16s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
+
+    // NOTE: opcode (1 byte) + operand (2 byte) = 3 byte
+    return offset + 3;
+}
+
 int disassembleInstruction(Chunk* chunk, int offset) {
     printf("%04d ", offset);
 
@@ -103,6 +126,10 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return simpleInstruction("OP_NEGATE", offset);
         case OP_PRINT:
             return simpleInstruction("OP_PRINT", offset);
+        case OP_JUMP:
+            return jumpInstruction("OP_JUMP", 1, chunk, offset);
+        case OP_JUMP_IF_FALSE:
+            return jumpInstruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
         case OP_RETURN:
             return simpleInstruction("OP_RETURN", offset);
         default:
