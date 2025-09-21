@@ -698,6 +698,7 @@ static void forStatement() {
      */
     beginScope();
 
+    // 初期化節
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
     if (match(TOKEN_SEMICOLON)) {
         // 初期化子なし
@@ -709,6 +710,7 @@ static void forStatement() {
         expressionStatement();
     }
 
+    // 条件節
     int loopStart = currentChunk()->count;
     int exitJump = -1;
     if (!match(TOKEN_SEMICOLON)) {
@@ -722,9 +724,34 @@ static void forStatement() {
         emitByte(OP_POP); // ループバックする前に条件値をクリア
     }
 
-    consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
+    // インクリメント節
+    if (!match(TOKEN_RIGHT_PAREN)) {
+        /**
+         * NOTE: インクリメント節の，コンパイルタイミングと実行タイミングのずれ問題への対処
+         *       コンパイルは今やらないといけないが，
+         *       実行するのは本文の実行の後である必要があるので，
+         *       一旦無条件で本文までジャンプする．
+         */
+        int bodyJump = emitJump(OP_JUMP);
 
+        int incrementStart = currentChunk()->count;
+        expression();
+        emitByte(OP_POP); // インクリメント節は副作用のための式なので，結果は棄てる．
+        consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
+
+        emitLoop(loopStart); // 条件節へループバック
+        loopStart = incrementStart; // ループバック先の上書き
+
+        patchJump(bodyJump);
+    }
+
+    // 本文
     statement();
+    /**
+     * NOTE: インクリメント節の，コンパイルタイミングと実行タイミングのずれ問題への対処 ②
+     *       インクリメント節がない場合 → loopStart == loopStart （条件節）にループバック
+     *       インクリメント節がある場合 → loopStart == incrementStart （インクリメント節）にループバック
+     */
     emitLoop(loopStart);
 
     // 条件節はオプションなので，まず存在確認を行う．
