@@ -692,8 +692,23 @@ static void expressionStatement() {
 }
 
 static void forStatement() {
+    /**
+     * 変数宣言が行われる可能性があるため，
+     * スコープで囲む．
+     */
+    beginScope();
+
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
-    consume(TOKEN_SEMICOLON, "Expect ';'.");
+
+    if (match(TOKEN_SEMICOLON)) {
+        // 初期化子なし
+    } else if (match(TOKEN_VAR)) {
+        // 変数宣言
+        varDeclaration();
+    } else {
+        // 式文（＝スタックに何も残さない）
+        expressionStatement();
+    }
 
     int loopStart = currentChunk()->count;
     consume(TOKEN_SEMICOLON, "Expect ';'.");
@@ -701,6 +716,8 @@ static void forStatement() {
 
     statement();
     emitLoop(loopStart);
+
+    endScope();
 }
 
 static void ifStatement() {
