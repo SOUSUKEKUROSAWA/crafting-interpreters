@@ -699,7 +699,6 @@ static void forStatement() {
     beginScope();
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
-
     if (match(TOKEN_SEMICOLON)) {
         // 初期化子なし
     } else if (match(TOKEN_VAR)) {
@@ -711,11 +710,28 @@ static void forStatement() {
     }
 
     int loopStart = currentChunk()->count;
-    consume(TOKEN_SEMICOLON, "Expect ';'.");
+    int exitJump = -1;
+    if (!match(TOKEN_SEMICOLON)) {
+        expression();
+        consume(TOKEN_SEMICOLON, "Expect ';' after loop condition.");
+        /**
+         * この時点で条件節の結果がスタックトップに置かれている状態．
+         * それが false であれば，ジャンプしてループを脱出する．
+         */
+        exitJump = emitJump(OP_JUMP_IF_FALSE);
+        emitByte(OP_POP); // ループバックする前に条件値をクリア
+    }
+
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
 
     statement();
     emitLoop(loopStart);
+
+    // 条件節はオプションなので，まず存在確認を行う．
+    if (exitJump != -1) {
+        patchJump(exitJump);
+        emitByte(OP_POP); // ループを抜ける前に条件値をクリア
+    }
 
     endScope();
 }
