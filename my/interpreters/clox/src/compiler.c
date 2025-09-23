@@ -10,6 +10,8 @@
 #include "debug.h"
 #endif
 
+#define MAX_CASES 256
+
 typedef struct {
     Token current; // 現在のトークン
     Token previous; // １つ前のトークン
@@ -593,7 +595,9 @@ ParseRule rules[] = {
     [TOKEN_STRING]        = {string,   NULL,   PREC_NONE},
     [TOKEN_NUMBER]        = {number,   NULL,   PREC_NONE},
     [TOKEN_AND]           = {NULL,     and_,   PREC_AND},
+    [TOKEN_CASE]          = {NULL,     NULL,   PREC_NONE},
     [TOKEN_CLASS]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_DEFAULT]       = {NULL,     NULL,   PREC_NONE},
     [TOKEN_ELSE]          = {NULL,     NULL,   PREC_NONE},
     [TOKEN_FALSE]         = {literal,  NULL,   PREC_NONE},
     [TOKEN_FOR]           = {NULL,     NULL,   PREC_NONE},
@@ -604,6 +608,7 @@ ParseRule rules[] = {
     [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE},
     [TOKEN_RETURN]        = {NULL,     NULL,   PREC_NONE},
     [TOKEN_SUPER]         = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_SWITCH]        = {NULL,     NULL,   PREC_NONE},
     [TOKEN_THIS]          = {NULL,     NULL,   PREC_NONE},
     [TOKEN_TRUE]          = {literal,  NULL,   PREC_NONE},
     [TOKEN_VAR]           = {NULL,     NULL,   PREC_NONE},
@@ -791,6 +796,81 @@ static void ifStatement() {
     patchJump(elseJump);
 }
 
+static void switchStatement() {
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'switch'.");
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after value.");
+    consume(TOKEN_LEFT_BRACE, "Expect '{' before switch cases.");
+
+    int state = 0; // 0: before all cases, 1: before default, 2: after default.
+    int caseEnds[MAX_CASES];
+    int caseCount = 0;
+    int previousCaseSkip = -1;
+
+    while (!match(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+        if (match(TOKEN_CASE) || match(TOKEN_DEFAULT)) {
+            TokenType caseType = parser.previous.type;
+
+            if (state == 2) {
+                error("Can't have another case or default after the default case.");
+            }
+
+            if (state == 1) {
+                // 直前に case ブロックを処理したので，switch 文の終端までジャンプ．
+                caseEnds[caseCount++] = emitJump(OP_JUMP);
+
+                // 直前の case ブロックが false だった場合のジャンプ先．
+                patchJump(previousCaseSkip);
+                emitByte(OP_POP); // 比較結果をクリア
+            }
+
+            if (caseType == TOKEN_CASE) {
+                state = 1;
+
+                /**
+                 * NOTE: OP_DUP の役割
+                 *       この時点で switch ( expression ) のコンパイルは完了しているので，
+                 *       結果がスタックトップに置かれている．
+                 *       後続の OP_EQUAL は，スタックの値をポップしてしまうので，
+                 *       OP_DUP で事前に複製して，後続の case 文でも使えるようにする．
+                 */
+                emitByte(OP_DUP);
+
+                expression();
+                consume(TOKEN_COLON, "Expect ':' after case value.");
+
+                emitByte(OP_EQUAL);
+                // 比較結果が false であれば，次の case 文までジャンプ．
+                previousCaseSkip = emitJump(OP_JUMP_IF_FALSE);
+                emitByte(OP_POP); // 比較結果のクリア
+            } else {
+                state = 2;
+                consume(TOKEN_COLON, "Expect ':' after default.");
+                previousCaseSkip = -1;
+            }
+        } else {
+            // case / default にマッチしない = case 文内部
+            if (state == 0) {
+                error("Can't have statements before any case.");
+            }
+            statement();
+        }
+    }
+
+    // default 句なしの場合の処理
+    if (state == 1) {
+        patchJump(previousCaseSkip);
+        emitByte(OP_POP);
+    }
+
+    // 全ての case 文が switch 文の終わりにジャンプするようにパッチを当てる．
+    for (int i = 0; i < caseCount; i++) {
+        patchJump(caseEnds[i]);
+    }
+
+    emitByte(OP_POP); // switch 条件値をクリア
+}
+
 static void printStatement() {
     expression();
     consume(TOKEN_SEMICOLON, "Expect ';' after value.");
@@ -830,6 +910,7 @@ static void synchronize() {
             case TOKEN_VAR:
             case TOKEN_FOR:
             case TOKEN_IF:
+            case TOKEN_SWITCH:
             case TOKEN_WHILE:
             case TOKEN_PRINT:
             case TOKEN_RETURN:
@@ -859,6 +940,8 @@ static void statement() {
         forStatement();
     } else if (match(TOKEN_IF)) {
         ifStatement();
+    } else if (match(TOKEN_SWITCH)) {
+        switchStatement();
     } else if (match(TOKEN_WHILE)) {
         whileStatement();
     } else if (match(TOKEN_LEFT_BRACE)) {
