@@ -4,6 +4,9 @@
 #include "object.h"
 #include "vm.h"
 
-bool compile(const char* source, Chunk* chunk);
+/**
+ * @note コンパイラ自身が（ObjFunction にラップされた）チャンクを作成して，返す．
+ */
+ObjFunction* compile(const char* source);
 
 #endif

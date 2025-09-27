@@ -96,6 +96,12 @@ ObjString* copyString(const char* chars, int length) {
 }
 
 static void printFunction(ObjFunction* function) {
+    if (function->name == NULL) {
+        // トップレベルコードの場合（関数名の有無で判別している）
+        printf("<script>");
+        return;
+    }
+
     printf("<fn %s>", function->name->chars);
 }
 

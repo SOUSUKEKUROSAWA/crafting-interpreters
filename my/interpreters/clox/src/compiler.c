@@ -242,20 +242,39 @@ static void patchJump(int offset) {
     currentChunk()->code[offset + 1] = jump & 0xff; // jump(16 bit) の下位8ビットを取り出してオペランドを上書き．
 }
 
-static void initCompiler(Compiler* compiler) {
+static void initCompiler(Compiler* compiler, FunctionType type) {
+    compiler->function = NULL; // NOTE: 数行後で初期化されるが，ガベージコレクタに対して，function フィールドが無効であることを明示するために必要．
+    compiler->type = type;
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
+    compiler->function = newFunction();
     current = compiler;
+
+    /**
+     * NOTE: VM が内部的に利用するローカル変数の予約
+     *       0 番目を空の名前で予約する．
+     *       名前が空なので，これを参照する識別子は書けない．
+     */
+    Local* local = &current->locals[current->localCount++];
+    local->depth = 0;
+    local->name.start = "";
+    local->name.length = 0;
 }
 
-static void endCompiler() {
+static ObjFunction* endCompiler() {
     emitReturn();
+    ObjFunction* function = current->function;
 
 #ifdef DEBUG_PRINT_CODE
     if (!parser.hadError) {
-        disassembleChunk(currentChunk(), "code");
+        disassembleChunk(
+            currentChunk(),
+            function->name != NULL ? function->name->chars : "<script>"
+        );
     }
 #endif
+
+    return function;
 }
 
 static void beginScope() {
@@ -877,11 +896,13 @@ static void statement() {
     }
 }
 
-bool compile(const char* source, Chunk* chunk) {
+/**
+ * @return 正常時は ObjFunction でラップしたチャンクを，エラー時には NULL を返す．
+ */
+ObjFunction* compile(const char* source) {
     initScanner(source);
     Compiler compiler;
-    initCompiler(&compiler);
-    compilingChunk = chunk;
+    initCompiler(&compiler, TYPE_SCRIPT);
     parser.hadError = false;
     parser.panicMode = false;
 
@@ -891,6 +912,6 @@ bool compile(const char* source, Chunk* chunk) {
         declaration();
     }
 
-    endCompiler();
-    return !parser.hadError;
+    ObjFunction* function = endCompiler();
+    return parser.hadError ? NULL : function;
 }
