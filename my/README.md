@@ -55,7 +55,7 @@ funDecl     -> "fun" function ;
 function    -> IDENTIFIER "(" parameters? ")" block ;
 parameters  -> IDENTIFIER ( "," IDENTIFIER )* ;
 varDecl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
-statement   -> exprStmt | forStmt | ifStmt | printStmt | returnStmt | whileStmt | block ;
+statement   -> exprStmt | forStmt | ifStmt | printStmt | returnStmt | whileStmt | block | continueStmt ;
 exprStmt    -> expression ";" ;
 forStmt     -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
 ifStmt      -> "if" "(" expression ")" statement ( "else" statement )? ;
@@ -63,6 +63,7 @@ printStmt   -> "print" expression ";" ;
 returnStmt  -> "return" expression? ";" ;
 whileStmt   -> "while" "(" expression ")" statement ;
 block       -> "{" declaration* "}" ;
+continueStmt -> "continue" ";" ;
 expression  -> assignment ;
 assignment  -> ( call "." )? IDENTIFIER "=" assignment | logic_or ; // 右
 logic_or    -> logic_and ( "or" logic_and )* ;                      // 左

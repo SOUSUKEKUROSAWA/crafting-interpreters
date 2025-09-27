@@ -63,6 +63,8 @@ typedef struct {
 static Parser parser;
 Compiler* current = NULL;
 Chunk* compilingChunk;
+int innermostLoopStart = -1; // -1: ループ外を表す．
+int innermostLoopScopeDepth = 0;
 
 static Chunk* currentChunk() {
     return compilingChunk;
@@ -711,7 +713,13 @@ static void forStatement() {
     }
 
     // 条件節
-    int loopStart = currentChunk()->count;
+    // 外側のループ情報の一時保存
+    int surroundingLoopStart = innermostLoopStart;
+    int surroundingLoopScopeDepth = innermostLoopScopeDepth;
+    // 最も内側のループ情報の更新
+    innermostLoopStart = currentChunk()->count;
+    innermostLoopScopeDepth = current->scopeDepth;
+
     int exitJump = -1;
     if (!match(TOKEN_SEMICOLON)) {
         expression();
@@ -739,9 +747,8 @@ static void forStatement() {
         emitByte(OP_POP); // インクリメント節は副作用のための式なので，結果は棄てる．
         consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
 
-        emitLoop(loopStart); // 条件節へループバック
-        loopStart = incrementStart; // ループバック先の上書き
-
+        emitLoop(innermostLoopStart); // 条件節へループバック
+        innermostLoopStart = incrementStart; // ループバック先の上書き
         patchJump(bodyJump);
     }
 
@@ -749,16 +756,20 @@ static void forStatement() {
     statement();
     /**
      * NOTE: インクリメント節の，コンパイルタイミングと実行タイミングのずれ問題への対処 ②
-     *       インクリメント節がない場合 → loopStart == loopStart （条件節）にループバック
-     *       インクリメント節がある場合 → loopStart == incrementStart （インクリメント節）にループバック
+     *       インクリメント節がない場合 → innermostLoopStart == innermostLoopStart （条件節）にループバック
+     *       インクリメント節がある場合 → innermostLoopStart == incrementStart （インクリメント節）にループバック
      */
-    emitLoop(loopStart);
+    emitLoop(innermostLoopStart);
 
     // 条件節はオプションなので，まず存在確認を行う．
     if (exitJump != -1) {
         patchJump(exitJump);
         emitByte(OP_POP); // ループを抜ける前に条件値をクリア
     }
+
+    // ループを抜けるタイミングで，最も内側のループ情報を元に戻す．
+    innermostLoopStart = surroundingLoopStart;
+    innermostLoopScopeDepth = surroundingLoopScopeDepth;
 
     endScope();
 }
@@ -814,6 +825,26 @@ static void whileStatement() {
     emitByte(OP_POP); // 条件値のクリア
 }
 
+static void continueStatement() {
+    if (innermostLoopStart == -1) {
+        error("Can't use 'continue' outside of a loop.");
+    }
+
+    consume(TOKEN_SEMICOLON, "Expect ';' after 'continue'.");
+
+    // ループ内で作成されたローカル変数をスタックから削除する．
+    for (
+        int i = current->localCount - 1;
+        i >= 0 && current->locals[i].depth > innermostLoopScopeDepth;
+        i--
+    ) {
+        emitByte(OP_POP);
+    }
+
+    // 最も内側のループの開始位置にジャンプする．
+    emitLoop(innermostLoopStart);
+}
+
 /**
  * 文の境界となるものに到達するまでトークンを読み捨ててから，
  * パニックモードを抜ける．
@@ -855,6 +886,8 @@ static void declaration() {
 static void statement() {
     if (match(TOKEN_PRINT)) {
         printStatement();
+    } else if (match(TOKEN_CONTINUE)) {
+        continueStatement();
     } else if (match(TOKEN_FOR)) {
         forStatement();
     } else if (match(TOKEN_IF)) {
