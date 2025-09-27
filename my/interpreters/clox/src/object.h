@@ -2,16 +2,20 @@
 #define clox_object_h
 
 #include "common.h"
+#include "chunk.h"
 #include "value.h"
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
+#define IS_FUNCTION(value) isObjType(value, OBJ_FUNCTION)
 #define IS_STRING(value) isObjType(value, OBJ_STRING)
 
+#define AS_FUNCTION(value) ((ObjFunction*)AS_OBJ(value))
 #define AS_STRING(value) ((ObjString*)AS_OBJ(value))
 #define AS_CSTRING(value) (((ObjString*)AS_OBJ(value))->chars)
 
 typedef enum {
+    OBJ_FUNCTION,
     OBJ_STRING,
 } ObjType;
 
@@ -27,13 +31,21 @@ struct Obj {
     struct Obj* next; // 追跡用の Obj チェーン（リスト）における，次の Obj へのポインタ
 };
 
+typedef struct {
+    Obj obj; // オブジェクト型共通のデータ．NOTE: 構造体継承：このフィールドを先頭に持ってくることで，ObjFunction* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
+    int arity; // その関数が受け取りたいパラメータの数
+    Chunk chunk; // 関数の本文を格納するチャンク
+    ObjString* name; // 関数名（ランタイムエラー時などに利用する）
+} ObjFunction;
+
 struct ObjString {
-    Obj obj; // オブジェクト型共通のデータ．NOTE: このフィールドを先頭に持ってくることで，ObjString* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
+    Obj obj; // オブジェクト型共通のデータ．NOTE: 構造体継承：このフィールドを先頭に持ってくることで，ObjString* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
     int length; // 割り当てられたバイト数
     char* chars; // 文字配列の先頭へのポインタ
     uint32_t hash; // その文字列に対応するハッシュ（ハッシュ再計算を不要にするためにキャッシュとして保持）
 };
 
+ObjFunction* newFunction();
 ObjString* takeString(char* chars, int length);
 ObjString* copyString(const char* chars, int length);
 
