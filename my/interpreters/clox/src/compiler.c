@@ -54,7 +54,15 @@ typedef struct {
     int depth; // このローカル変数を宣言したブロックを囲んでいるブロックの数（scopeDepth）．NOTE: -1 の場合は未初期化状態であることを表す．
 } Local;
 
+typedef enum {
+    TYPE_FUNCTION, // 関数本文
+    TYPE_SCRIPT, // トップレベルコード
+} FunctionType;
+
 typedef struct {
+    ObjFunction* function; // コンパイラの出力先となる関数オブジェクトへのポインタ．NOTE: 単純化のため，トップレベルコードも暗黙的な関数の中にラップされているものとして扱う．
+    FunctionType type; // 対象のコードがトップレベルなのか，関数本文なのかを判別するためのフラグ．
+
     Local locals[UINT8_COUNT]; // コンパイル時点でスコープに入る全てのローカル変数を格納する配列．NOTE: オペランドが 1 バイトまでと決まっているので，要素数にも固定の上限（UINT8_COUNT）が存在する．
     int localCount; // スコープ内のローカル変数の個数
     int scopeDepth; // 今コンパイルしているコードを囲んでいるブロックの数（e.g. 0 = グローバルスコープ，1 = トップレベルブロック）
@@ -62,10 +70,9 @@ typedef struct {
 
 static Parser parser;
 Compiler* current = NULL;
-Chunk* compilingChunk;
 
 static Chunk* currentChunk() {
-    return compilingChunk;
+    return &current->function->chunk;
 }
 
 static void errorAt(Token* token, const char* message) {
