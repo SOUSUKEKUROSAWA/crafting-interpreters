@@ -14,6 +14,7 @@ VM vm;
 
 static void resetStack() {
     vm.stackTop = vm.stack; // NOTE: vm.stack はスタック配列の先頭アドレスを表す．
+    vm.frameCount = 0;
 }
 
 /**
@@ -28,8 +29,9 @@ static void runtimeError(const char* format, ...) {
     va_end(args); // 可変長引数の取り出しを終了（クリーンアップ）
     fputs("\n", stderr);
 
-    size_t instruction = vm.ip - vm.chunk->code - 1; // 直前に実行した命令のバイトオフセットを算出．
-    int line = vm.chunk->lines[instruction];
+    CallFrame* frame = &vm.frames[vm.frameCount - 1];
+    size_t instruction = frame->ip - frame->function->chunk.code - 1; // 直前に実行した命令のバイトオフセットを算出．
+    int line = frame->function->chunk.lines[instruction];
     fprintf(stderr, "[line %d] in script\n", line);
 
     resetStack();
@@ -88,6 +90,7 @@ static void concatenate() {
 }
 
 static InterpretResult run() {
+    CallFrame* frame = &vm.frames[vm.frameCount - 1];
 
 /**
  * マクロ:
@@ -102,7 +105,7 @@ static InterpretResult run() {
 /**
  * 現在 ip が指している命令を読みだしてから，ip を１つ次に進める．
  */
-#define READ_BYTE() (*vm.ip++)
+#define READ_BYTE() (*frame->ip++)
 
 /**
  * 現在 ip が指している命令を読みだし，
@@ -110,7 +113,7 @@ static InterpretResult run() {
  * 対応する値を取り出す．
  * （ip を１つ次に進める）
  */
-#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
 
 /**
  * チャンクから次の2バイトを取り出して，16ビットの符号なし整数を組み立てる．
@@ -127,7 +130,7 @@ static InterpretResult run() {
  *                               OR 00000000 01101100
  *                                = 11001010 01101100
  */
-#define READ_SHORT() (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | vm.ip[-1]))
+#define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
 
 /**
  * 定数プールから取得した値を文字列として読みだす．
@@ -163,8 +166,8 @@ static InterpretResult run() {
         printf("\n");
 
         disassembleInstruction(
-            vm.chunk,
-            (int)(vm.ip - vm.chunk->code)
+            &frame->function->chunk,
+            (int)(frame->ip - frame->function->chunk.code)
         );
 #endif
 
@@ -183,13 +186,13 @@ static InterpretResult run() {
             case OP_POP: pop(); break;
             case OP_GET_LOCAL: {
                 uint8_t slot = READ_BYTE();
-                push(vm.stack[slot]);
+                push(frame->slots[slot]);
                 break;
             }
             case OP_SET_LOCAL: {
                 uint8_t slot = READ_BYTE();
                 // NOTE: 代入は式なので，必ず値を生成するため，ポップしない（というより，ポップした後プッシュするという動作を省略している．）
-                vm.stack[slot] = peek(0);
+                frame->slots[slot] = peek(0);
                 break;
             }
             case OP_GET_GLOBAL: {
@@ -266,12 +269,12 @@ static InterpretResult run() {
             }
             case OP_JUMP: {
                 uint16_t offset = READ_SHORT();
-                vm.ip += offset;
+                frame->ip += offset;
                 break;
             }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
-                if (isFalsey(peek(0))) vm.ip += offset;
+                if (isFalsey(peek(0))) frame->ip += offset;
                 /**
                  * NOTE: この命令は，if 文以外の論理演算子でも使われるため，
                  *       式か文かが事前に決まらないので，この時点では条件値をポップしない．
@@ -281,7 +284,7 @@ static InterpretResult run() {
             }
             case OP_LOOP: {
                 uint16_t offset = READ_SHORT();
-                vm.ip -= offset;
+                frame->ip -= offset;
                 break;
             }
             case OP_RETURN: {
@@ -298,20 +301,19 @@ static InterpretResult run() {
 }
 
 InterpretResult interpret(const char* source) {
-    Chunk chunk;
-    initChunk(&chunk);
+    // 簡単のため，コード全体が暗黙の main 関数のようなものにラップされているものとして扱う．
+    ObjFunction* function = compile(source);
+    if (function == NULL) return INTERPRET_COMPILE_ERROR;
 
-    // ユーザーのプログラムと空のチャンクをコンパイラに渡す．
-    if (!compile(source, &chunk)) {
-        freeChunk(&chunk);
-        return INTERPRET_COMPILE_ERROR;
-    }
+    /**
+     * コンパイラが返した function をスタックスロットの 0 番目にプッシュする．
+     * ref. 「NOTE: VM が内部的に利用するローカル変数の予約」
+     */
+    push(OBJ_VAL(function));
+    CallFrame* frame = &vm.frames[vm.frameCount++];
+    frame->function = function;
+    frame->ip = function->chunk.code; // 暗黙の main 関数のようなもの（= function）のバイトコードの先頭を ip にセットする．
+    frame->slots = vm.stack;
 
-    // VM にコンパイルされたチャンクを渡して実行する．
-    vm.chunk = &chunk;
-    vm.ip = vm.chunk->code;
-    InterpretResult result = run();
-
-    freeChunk(&chunk);
-    return result;
+    return run();
 }

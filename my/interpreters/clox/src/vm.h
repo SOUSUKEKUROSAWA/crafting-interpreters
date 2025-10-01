@@ -1,17 +1,29 @@
 #ifndef clox_vm_h
 #define clox_vm_h
 
-#include "chunk.h"
+#include "object.h"
 #include "table.h"
 #include "value.h"
 
-#define STACK_MAX 256 // WARNING: 固定値にする場合，スタックオーバーフローが発生する危険がある．
+#define FRAMES_MAX 64 // WARNING: スタックオーバーフローが発生する危険あり．
+#define STACK_MAX (FRAMES_MAX * UINT8_COUNT) // WARNING: スタックオーバーフローが発生する危険あり．
+
+/**
+ * NOTE: コールフレームのアイデア
+ *       どこがスタックトップになるかは，関数が呼び出されるまで分からないが，
+ *       そのスタックトップからの相対位置情報はコンパイル時点で確定する．
+ *       それらの相対位置によって関数の情報を表した領域を，呼び出しごとに変動するフレームと見立てて，
+ *       コールフレーム（call frame）と呼ぶ．
+ */
+typedef struct {
+    ObjFunction* function; // 今実行している関数へのポインタ．NOTE: ここから関数のチャンクにアクセス可能．
+    uint8_t* ip; // 次に実行する命令へのポインタ（命令ポインタ = Instruction Pointer の略）．NOTE: 高速化のためバイトコード配列内を直接参照する．NOTE: 現在の関数自身が呼び出した関数のリターンアドレスとしても利用される．
+    Value* slots; // VMの値スタックにおいて，その関数が利用できる最初のスロットへのポインタ．NOTE: 関数内のローカル変数は，このスロットからの相対位置で表され，slots[x] のようにアクセスできる．
+} CallFrame;
 
 typedef struct {
-    Chunk* chunk;
-
-    // NOTE: 高速化のためバイトコード配列内を直接参照する．
-    uint8_t* ip; // 次に実行する命令へのポインタ（命令ポインタ = Instruction Pointer の略）
+    CallFrame frames[FRAMES_MAX]; // 進行中の関数コールの情報を保持するコールフレームの配列．NOTE: 新しいフレームほど後ろに追加されるスタックのセマンティクスを持つ．WARNING: 処理できる関数コールの深さに上限がある．
+    int frameCount; // 進行中の関数コールの数．
 
     /**
      * NOTE: WARNING: スタック領域とヒープ領域について
