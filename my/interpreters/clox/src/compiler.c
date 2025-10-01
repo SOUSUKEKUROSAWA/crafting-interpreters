@@ -397,6 +397,12 @@ static void declareVariable() {
     addLocal(*name);
 }
 
+/**
+ * 変数名の読み取りと保存．
+ *
+ * @return ローカル変数の場合 0．グローバル変数の場合，その識別子が格納された定数表のインデックス．
+ * @note 自己初期化中の読み出しエラーを検出できるようにするため，ローカル変数は未初期化状態として登録される．
+ */
 static uint8_t parseVariable(const char* errorMessage) {
     consume(TOKEN_IDENTIFIER, errorMessage);
 
@@ -411,10 +417,20 @@ static uint8_t parseVariable(const char* errorMessage) {
     return identifierConstant(&parser.previous);
 }
 
+/**
+ * 直近のローカル変数に現在のスコープ深さを設定（初期化）
+ */
 static void markInitialized() {
+    if (current->scopeDepth == 0) return; // トップレベルから呼び出された場合
     current->locals[current->localCount - 1].depth = current->scopeDepth;
 }
 
+/**
+ * 初期化値の評価完了後の束縛確定．
+ *
+ * @note すでに初期化式の評価結果はスタックトップにある前提．
+ * @note ローカル変数の場合，初期化する．グローバル変数の場合，バイトコード出力する．
+ */
 static void defineVariable(uint8_t global) {
     /**
      * NOTE: この時点ですでに変数の値はスタックトップに置かれているため，
@@ -687,6 +703,39 @@ static void block() {
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after block.");
 }
 
+/**
+ * 関数本文をコンパイルし，
+ * 作成した関数オブジェクトの定数表における位置（インデックス）をスタックトップに残す．
+ */
+static void function(FunctionType type) {
+    Compiler compiler;
+    initCompiler(&compiler, type);
+    beginScope(); // NOTE: 関数本文の終わりに到達したら，Compiler 自体も終わるので，endScope() の呼び出しは不要．
+
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after function name.");
+    consume(TOKEN_LEFT_BRACE, "Expect '{' after function name.");
+    block();
+
+    ObjFunction* function = endCompiler();
+    emitBytes(OP_CONSTANT, makeConstant(OBJ_VAL(function)));
+}
+
+static void funDeclaration() {
+    uint8_t global = parseVariable("Expect function name.");
+    /**
+     * NOTE: 再帰の実装
+     *       関数本文のコンパイルの前に初期化することで，
+     *       関数自身の名前を関数本体内で使えるようにする．
+     *
+     * NOTE: 関数は，完全に定義し終わるまで，コールによって本文が実行されることはない
+     *       ＝ 自己初期化中の呼び出しは起こりえないので，この時点で初期化しても大丈夫．
+     */
+    markInitialized();
+    function(TYPE_FUNCTION); // 関数オブジェクトをスタックトップに残す．
+    defineVariable(global); // スタックトップの関数オブジェクトを，関数名に紐づける．
+}
+
 static void varDeclaration() {
     uint8_t global = parseVariable("Expect variable name.");
 
@@ -869,7 +918,9 @@ static void synchronize() {
 }
 
 static void declaration() {
-    if (match(TOKEN_VAR)) {
+    if (match(TOKEN_FUN)) {
+        funDeclaration();
+    } else if (match(TOKEN_VAR)) {
         varDeclaration();
     } else {
         statement();
