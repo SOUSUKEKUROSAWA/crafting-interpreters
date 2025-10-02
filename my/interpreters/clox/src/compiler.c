@@ -59,7 +59,11 @@ typedef enum {
     TYPE_SCRIPT, // トップレベルコード
 } FunctionType;
 
-typedef struct {
+/**
+ * @note 関数ごとに生成される．
+ */
+typedef struct Compiler {
+    struct Compiler* enclosing; // 自身を囲む Compiler へのポインタ．NOTE: これにより，ネストした Compiler の連結リストを構成する．WARNING: struct がないと循環参照になってしまう．
     ObjFunction* function; // コンパイラの出力先となる関数オブジェクトへのポインタ．NOTE: 単純化のため，トップレベルコードも暗黙的な関数の中にラップされているものとして扱う．
     FunctionType type; // 対象のコードがトップレベルなのか，関数本文なのかを判別するためのフラグ．
 
@@ -243,6 +247,7 @@ static void patchJump(int offset) {
 }
 
 static void initCompiler(Compiler* compiler, FunctionType type) {
+    compiler->enclosing = current;
     compiler->function = NULL; // NOTE: 数行後で初期化されるが，ガベージコレクタに対して，function フィールドが無効であることを明示するために必要．
     compiler->type = type;
     compiler->localCount = 0;
@@ -252,6 +257,7 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
 
     /**
      * NOTE: VM が内部的に利用するローカル変数の予約
+     *       コンパイラが生成する関数オブジェクトが格納される．
      *       0 番目を空の名前で予約する．
      *       名前が空なので，これを参照する識別子は書けない．
      */
@@ -274,6 +280,7 @@ static ObjFunction* endCompiler() {
     }
 #endif
 
+    current = current->enclosing;
     return function;
 }
 
