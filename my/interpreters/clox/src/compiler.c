@@ -462,6 +462,31 @@ static void defineVariable(uint8_t global) {
     emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
+/**
+ * @return 引数の個数
+ */
+static uint8_t argumentList() {
+    uint8_t argCount = 0;
+
+    if (!check(TOKEN_RIGHT_PAREN)) {
+        do {
+            expression();
+            if (argCount == 255) {
+                /**
+                 * NOTE: argCount に上限がある理由
+                 *       argCount は OP_CALL 命令のオペランドであり，
+                 *       1バイトまでという制限がある．
+                 */
+                error("Can't have more than 255 arguments.");
+            }
+            argCount++;
+        } while (match(TOKEN_COMMA));
+    }
+
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+    return argCount;
+}
+
 static void and_(bool canAssign) {
     /**
      * NOTE: AND 短絡の実装
@@ -512,6 +537,11 @@ static void binary(bool canAssign) {
         case TOKEN_SLASH: emitByte(OP_DIVIDE); break;
         default: return;
     }
+}
+
+static void call(bool canAssign) {
+    uint8_t argCount = argumentList();
+    emitBytes(OP_CALL, argCount);
 }
 
 static void literal(bool canAssign) {
@@ -630,7 +660,7 @@ static void unary(bool canAssign) {
  * NOTE: 関数へのポインタを表に記入できるようにするため，それらの関数定義より後に定義している．
  */
 ParseRule rules[] = {
-    [TOKEN_LEFT_PAREN]    = {grouping, NULL,   PREC_NONE},
+    [TOKEN_LEFT_PAREN]    = {grouping, call,   PREC_CALL},
     [TOKEN_RIGHT_PAREN]   = {NULL,     NULL,   PREC_NONE},
     [TOKEN_LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE},
     [TOKEN_RIGHT_BRACE]   = {NULL,     NULL,   PREC_NONE},
@@ -735,7 +765,8 @@ static void function(FunctionType type) {
         do {
             current->function->arity++;
             if (current->function->arity > 255) {
-                errorAtCurrent("Cant't have more than 255 parameters.");
+                // ref. 「NOTE: argCount に上限がある理由」
+                errorAtCurrent("Can't have more than 255 parameters.");
             }
             uint8_t constant = parseVariable("Expect parameter name.");
             defineVariable(constant);
