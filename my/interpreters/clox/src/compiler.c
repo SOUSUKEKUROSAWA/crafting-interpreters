@@ -255,6 +255,17 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
     compiler->function = newFunction();
     current = compiler;
 
+    if (type != TYPE_SCRIPT) {
+        /**
+         * WARNING: 関数オブジェクトのライフタイムは，コンパイラよりも長いため，
+         *          字句へのポインタを保存するだけだと，いざ実行する時に
+         *          そのポインタのメモリが解放されてしまっているリスクがある．
+         *
+         * ので，コピーを作成し，独自のヒープに関数名の文字列を割り当てておく必要がある．
+         */
+        current->function->name = copyString(parser.previous.start, parser.previous.length);
+    }
+
     /**
      * NOTE: VM が内部的に利用するローカル変数の予約
      *       コンパイラが生成する関数オブジェクトが格納される．
@@ -720,7 +731,18 @@ static void function(FunctionType type) {
     beginScope(); // NOTE: 関数本文の終わりに到達したら，Compiler 自体も終わるので，endScope() の呼び出しは不要．
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+    if (!check(TOKEN_RIGHT_PAREN)) {
+        do {
+            current->function->arity++;
+            if (current->function->arity > 255) {
+                errorAtCurrent("Cant't have more than 255 parameters.");
+            }
+            uint8_t constant = parseVariable("Expect parameter name.");
+            defineVariable(constant);
+        } while (match(TOKEN_COMMA));
+    }
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after function name.");
+
     consume(TOKEN_LEFT_BRACE, "Expect '{' after function name.");
     block();
 
