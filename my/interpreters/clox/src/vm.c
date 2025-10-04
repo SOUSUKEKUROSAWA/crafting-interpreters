@@ -68,6 +68,32 @@ static Value peek(int distance) {
     return vm.stackTop[-1 - distance];
 }
 
+static bool call(ObjFunction* function, int argCount) {
+    CallFrame* frame = &vm.frames[vm.frameCount++];
+    frame->function = function;
+    frame->ip = function->chunk.code;
+    frame->slots = vm.stackTop - argCount - 1; // スタックスロットの 0 番目は予約済み（関数オブジェクト自身が配置される）ので -1 が必要．
+    return true;
+}
+
+/**
+ * @return
+ *   true: 関数の呼び出し成功，呼び出された関数のためのコールフレームが追加された．
+ *  false: 関数の呼び出し失敗（Callable でない）．
+ */
+static bool callValue(Value callee, int argCount) {
+    if (IS_OBJ(callee)) {
+        switch (OBJ_TYPE(callee)) {
+            case OBJ_FUNCTION:
+                return call(AS_FUNCTION(callee), argCount);
+            default:
+                break;
+        }
+    }
+    runtimeError("Can only call functions and classes.");
+    return false;
+}
+
 /**
  * @return true: 入力が Falsey な値（nil or false）, false: 入力が Falsey ではない値
  */
@@ -287,6 +313,26 @@ static InterpretResult run() {
                 frame->ip -= offset;
                 break;
             }
+            /**
+             * NOTE: 関数のパラメータと実際の引数の関連付け
+             *       OP_CALL 命令を実行する時点で，
+             *       スタック上にはパラメータと同じ順序で引数が配置されているので，
+             *       パラメータの個数（Arity）の情報さえあれば正しく処理することができる．
+             */
+            case OP_CALL: {
+                int argCount = READ_BYTE();
+                if (!callValue(peek(argCount), argCount)) {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                /**
+                 * 現在のフレームを呼び出した関数のフレームに更新
+                 *
+                 * NOTE: 関数呼び出しの度に現在のフレームを更新していくことで，
+                 *       ip も更新され，実質的に命令のジャンプが行える．
+                 */
+                frame = &vm.frames[vm.frameCount - 1];
+                break;
+            }
             case OP_RETURN: {
                 return INTERPRET_OK;
             }
@@ -310,10 +356,7 @@ InterpretResult interpret(const char* source) {
      * ref. 「NOTE: VM が内部的に利用するローカル変数の予約」
      */
     push(OBJ_VAL(function));
-    CallFrame* frame = &vm.frames[vm.frameCount++];
-    frame->function = function;
-    frame->ip = function->chunk.code; // 暗黙の main 関数のようなもの（= function）のバイトコードの先頭を ip にセットする．
-    frame->slots = vm.stack;
+    call(function, 0);
 
     return run();
 }
