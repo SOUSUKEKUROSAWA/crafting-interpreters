@@ -5,8 +5,8 @@
 #include "table.h"
 #include "value.h"
 
-#define FRAMES_MAX 64 // WARNING: スタックオーバーフローが発生する危険あり．
-#define STACK_MAX (FRAMES_MAX * UINT8_COUNT) // WARNING: スタックオーバーフローが発生する危険あり．
+#define FRAMES_MAX 64 // WARNING: この数を超えるとスタックオーバーフローが発生する．
+#define STACK_MAX (FRAMES_MAX * UINT8_COUNT) // WARNING: この数を超えるとスタックオーバーフローが発生する．
 
 /**
  * NOTE: コールフレームのアイデア
