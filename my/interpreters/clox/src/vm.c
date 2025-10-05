@@ -135,6 +135,7 @@ static void concatenate() {
 }
 
 static InterpretResult run() {
+    // 現在のフレームをキャッシュ
     CallFrame* frame = &vm.frames[vm.frameCount - 1];
 
 /**
@@ -353,7 +354,18 @@ static InterpretResult run() {
                 break;
             }
             case OP_RETURN: {
-                return INTERPRET_OK;
+                Value result = pop(); // 一時退避
+                vm.frameCount--;
+
+                if (vm.frameCount == 0) {
+                    pop(); // トップレベルのスクリプト関数を破棄
+                    return INTERPRET_OK;
+                }
+
+                vm.stackTop = frame->slots;
+                push(result);
+                frame = &vm.frames[vm.frameCount - 1];
+                break;
             }
         }
     }

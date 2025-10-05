@@ -195,6 +195,7 @@ static void emitLoop(int loopStart) {
 }
 
 static void emitReturn() {
+    emitByte(OP_NIL); // NOTE: 暗黙の戻り値
     emitByte(OP_RETURN);
 }
 
