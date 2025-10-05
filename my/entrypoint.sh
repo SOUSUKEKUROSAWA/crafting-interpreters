@@ -61,7 +61,7 @@ elif [ "$LANGUAGE" = "c" ]; then
   # すべての.cファイルをコンパイル
   for file in $(find . -name "*.c"); do
     obj_file="/app/src/clox/bin/${file%.c}.o"
-    if ! gcc -c -o "$obj_file" "$file"; then
+    if ! gcc -Werror -c -o "$obj_file" "$file"; then
       echo "Error: Failed to compile $file" >&2
       echo "Compilation aborted due to error." >&2
       exit 1
