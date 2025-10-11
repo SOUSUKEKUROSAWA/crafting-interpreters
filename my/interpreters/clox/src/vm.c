@@ -161,6 +161,7 @@ static void concatenate() {
 static InterpretResult run() {
     // 現在のフレームをキャッシュ
     CallFrame* frame = &vm.frames[vm.frameCount - 1];
+    register uint8_t* ip = frame->ip;
 
 /**
  * マクロ:
@@ -175,7 +176,7 @@ static InterpretResult run() {
 /**
  * 現在 ip が指している命令を読みだしてから，ip を１つ次に進める．
  */
-#define READ_BYTE() (*frame->ip++)
+#define READ_BYTE() (*ip++)
 
 /**
  * 現在 ip が指している命令を読みだし，
@@ -200,7 +201,7 @@ static InterpretResult run() {
  *                               OR 00000000 01101100
  *                                = 11001010 01101100
  */
-#define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
+#define READ_SHORT() (ip += 2, (uint16_t)((ip[-2] << 8) | ip[-1]))
 
 /**
  * 定数プールから取得した値を文字列として読みだす．
@@ -216,6 +217,7 @@ static InterpretResult run() {
 #define BINARY_OP(valueType, op) \
     do { \
         if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
+            frame->ip = ip; \
             runtimeError("Operands must be numbers."); \
             return INTERPRET_RUNTIME_ERROR; \
         } \
@@ -269,6 +271,7 @@ static InterpretResult run() {
                 ObjString* name = READ_STRING(); // オペランドの読み出し
                 Value value;
                 if (!tableGet(&vm.globals, name, &value)) {
+                    frame->ip = ip;
                     runtimeError("Undefined variable '%s'.", name->chars);
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -291,6 +294,7 @@ static InterpretResult run() {
                      * NOTE: 暗黙の変数宣言は行わない．
                      */
                     tableDelete(&vm.globals, name);
+                    frame->ip = ip;
                     runtimeError("Undefined variable '%s'.", name->chars);
                     return INTERPRET_COMPILE_ERROR;
                 }
@@ -313,6 +317,7 @@ static InterpretResult run() {
                     double a = AS_NUMBER(pop());
                     push(NUMBER_VAL(a + b));
                 } else {
+                    frame->ip = ip;
                     runtimeError("Operands must be two numbers or two strings.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -326,6 +331,7 @@ static InterpretResult run() {
                 break;
             case OP_NEGATE:
                 if (!IS_NUMBER(peek(0))) {
+                    frame->ip = ip;
                     runtimeError("Operand must be a number.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -339,12 +345,12 @@ static InterpretResult run() {
             }
             case OP_JUMP: {
                 uint16_t offset = READ_SHORT();
-                frame->ip += offset;
+                ip += offset;
                 break;
             }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
-                if (isFalsey(peek(0))) frame->ip += offset;
+                if (isFalsey(peek(0))) ip += offset;
                 /**
                  * NOTE: この命令は，if 文以外の論理演算子でも使われるため，
                  *       式か文かが事前に決まらないので，この時点では条件値をポップしない．
@@ -354,7 +360,7 @@ static InterpretResult run() {
             }
             case OP_LOOP: {
                 uint16_t offset = READ_SHORT();
-                frame->ip -= offset;
+                ip -= offset;
                 break;
             }
             /**
@@ -365,6 +371,7 @@ static InterpretResult run() {
              */
             case OP_CALL: {
                 int argCount = READ_BYTE();
+                frame->ip = ip;
                 if (!callValue(peek(argCount), argCount)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -375,6 +382,7 @@ static InterpretResult run() {
                  *       ip も更新され，実質的に命令のジャンプが行える．
                  */
                 frame = &vm.frames[vm.frameCount - 1];
+                ip = frame->ip;
                 break;
             }
             case OP_RETURN: {
@@ -389,6 +397,7 @@ static InterpretResult run() {
                 vm.stackTop = frame->slots;
                 push(result);
                 frame = &vm.frames[vm.frameCount - 1];
+                ip = frame->ip;
                 break;
             }
         }
