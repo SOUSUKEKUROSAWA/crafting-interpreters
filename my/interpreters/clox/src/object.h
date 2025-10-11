@@ -8,14 +8,17 @@
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
 #define IS_FUNCTION(value) isObjType(value, OBJ_FUNCTION)
+#define IS_NATIVE(value) isObjType(value, OBJ_NATIVE)
 #define IS_STRING(value) isObjType(value, OBJ_STRING)
 
 #define AS_FUNCTION(value) ((ObjFunction*)AS_OBJ(value))
+#define AS_NATIVE(value) (((ObjNative*)AS_OBJ(value))->function)
 #define AS_STRING(value) ((ObjString*)AS_OBJ(value))
 #define AS_CSTRING(value) (((ObjString*)AS_OBJ(value))->chars)
 
 typedef enum {
     OBJ_FUNCTION,
+    OBJ_NATIVE,
     OBJ_STRING,
 } ObjType;
 
@@ -38,6 +41,17 @@ typedef struct {
     ObjString* name; // 関数名（ランタイムエラー時などに利用する）
 } ObjFunction;
 
+/**
+ * @param argCount 引数の個数
+ * @param args スタック上の最初の引き数へのポインタ
+ */
+typedef Value (*NativeFn)(int argCount, Value* args);
+
+typedef struct {
+    Obj obj; // オブジェクト型共通のデータ．NOTE: 構造体継承：このフィールドを先頭に持ってくることで，ObjFunction* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
+    NativeFn function; // ネイティブ関数（言語組み込みの関数）へのポインタ．
+} ObjNative;
+
 struct ObjString {
     Obj obj; // オブジェクト型共通のデータ．NOTE: 構造体継承：このフィールドを先頭に持ってくることで，ObjString* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
     int length; // 割り当てられたバイト数
@@ -46,6 +60,7 @@ struct ObjString {
 };
 
 ObjFunction* newFunction();
+ObjNative* newNative(NativeFn function);
 ObjString* takeString(char* chars, int length);
 ObjString* copyString(const char* chars, int length);
 
