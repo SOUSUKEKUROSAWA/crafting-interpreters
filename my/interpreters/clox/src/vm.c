@@ -51,10 +51,10 @@ static void runtimeError(const char* format, ...) {
     resetStack();
 }
 
-static void defineNative(const char* name, NativeFn function) {
+static void defineNative(const char* name, NativeFn function, int arity) {
     // GC が買ってにメモリを開放しないように一旦スタックにプッシュする．
     push(OBJ_VAL(copyString(name, (int)strlen(name))));
-    push(OBJ_VAL(newNative(function)));
+    push(OBJ_VAL(newNative(function, arity)));
     tableSet(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
     pop();
     pop();
@@ -66,7 +66,7 @@ void initVM() {
     initTable(&vm.globals);
     initTable(&vm.strings);
 
-    defineNative("clock", clockNative);
+    defineNative("clock", clockNative, 0);
 }
 
 void freeVM() {
@@ -122,6 +122,11 @@ static bool callValue(Value callee, int argCount) {
             case OBJ_FUNCTION:
                 return call(AS_FUNCTION(callee), argCount);
             case OBJ_NATIVE: {
+                int expected = AS_NATIVE_ARITY(callee);
+                if (argCount != expected) {
+                    runtimeError("Expected %d arguments but got %d.", expected, argCount);
+                    return false;
+                }
                 NativeFn native = AS_NATIVE(callee);
                 // Cの関数として呼び出して（Cに制御を委ねて），結果を受け取る．
                 Value result = native(argCount, vm.stackTop - argCount);

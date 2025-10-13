@@ -13,6 +13,7 @@
 
 #define AS_FUNCTION(value) ((ObjFunction*)AS_OBJ(value))
 #define AS_NATIVE(value) (((ObjNative*)AS_OBJ(value))->function)
+#define AS_NATIVE_ARITY(value) (((ObjNative*)AS_OBJ(value))->arity)
 #define AS_STRING(value) ((ObjString*)AS_OBJ(value))
 #define AS_CSTRING(value) (((ObjString*)AS_OBJ(value))->chars)
 
@@ -50,6 +51,7 @@ typedef Value (*NativeFn)(int argCount, Value* args);
 typedef struct {
     Obj obj; // オブジェクト型共通のデータ．NOTE: 構造体継承：このフィールドを先頭に持ってくることで，ObjFunction* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
     NativeFn function; // ネイティブ関数（言語組み込みの関数）へのポインタ．
+    int arity; // そのネイティブ関数が受け取る引数の数
 } ObjNative;
 
 struct ObjString {
@@ -60,7 +62,7 @@ struct ObjString {
 };
 
 ObjFunction* newFunction();
-ObjNative* newNative(NativeFn function);
+ObjNative* newNative(NativeFn function, int arity);
 ObjString* takeString(char* chars, int length);
 ObjString* copyString(const char* chars, int length);
 
