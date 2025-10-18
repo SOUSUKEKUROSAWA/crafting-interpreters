@@ -37,7 +37,7 @@ static void runtimeError(const char* format, ...) {
     // NOTE: Stack Trace
     for (int i = vm.frameCount - 1; i >= 0; i--) {
         CallFrame* frame = &vm.frames[i];
-        ObjFunction* function = frame->function;
+        ObjFunction* function = frame->closure->function;
         size_t instruction = frame->ip - function->chunk.code - 1;
 
         fprintf(stderr, "[line %d] in ", function->chunk.lines[instruction]);
@@ -93,9 +93,9 @@ static Value peek(int distance) {
     return vm.stackTop[-1 - distance];
 }
 
-static bool call(ObjFunction* function, int argCount) {
-    if (argCount != function->arity) {
-        runtimeError("Expected %d arguments but got %d.", function->arity, argCount);
+static bool call(ObjClosure* closure, int argCount) {
+    if (argCount != closure->function->arity) {
+        runtimeError("Expected %d arguments but got %d.", closure->function->arity, argCount);
         return false;
     }
 
@@ -105,8 +105,8 @@ static bool call(ObjFunction* function, int argCount) {
     }
 
     CallFrame* frame = &vm.frames[vm.frameCount++];
-    frame->function = function;
-    frame->ip = function->chunk.code;
+    frame->closure = closure;
+    frame->ip = closure->function->chunk.code;
     frame->slots = vm.stackTop - argCount - 1; // スタックスロットの 0 番目は予約済み（関数オブジェクト自身が配置される）ので -1 が必要．
     return true;
 }
@@ -119,8 +119,8 @@ static bool call(ObjFunction* function, int argCount) {
 static bool callValue(Value callee, int argCount) {
     if (IS_OBJ(callee)) {
         switch (OBJ_TYPE(callee)) {
-            case OBJ_FUNCTION:
-                return call(AS_FUNCTION(callee), argCount);
+            case OBJ_CLOSURE:
+                return call(AS_CLOSURE(callee), argCount);
             case OBJ_NATIVE: {
                 NativeFn native = AS_NATIVE(callee);
                 // Cの関数として呼び出して（Cに制御を委ねて），結果を受け取る．
@@ -183,7 +183,7 @@ static InterpretResult run() {
  * 対応する値を取り出す．
  * （ip を１つ次に進める）
  */
-#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
+#define READ_CONSTANT() (frame->closure->function->chunk.constants.values[READ_BYTE()])
 
 /**
  * チャンクから次の2バイトを取り出して，16ビットの符号なし整数を組み立てる．
@@ -236,8 +236,8 @@ static InterpretResult run() {
         printf("\n");
 
         disassembleInstruction(
-            &frame->function->chunk,
-            (int)(frame->ip - frame->function->chunk.code)
+            &frame->closure->function->chunk,
+            (int)(frame->ip - frame->closure->function->chunk.code)
         );
 #endif
 
@@ -377,6 +377,12 @@ static InterpretResult run() {
                 frame = &vm.frames[vm.frameCount - 1];
                 break;
             }
+            case OP_CLOSURE: {
+                ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
+                ObjClosure* closure = newClosure(function);
+                push(OBJ_VAL(closure));
+                break;
+            }
             case OP_RETURN: {
                 Value result = pop(); // 一時退避
                 vm.frameCount--;
@@ -409,9 +415,14 @@ InterpretResult interpret(const char* source) {
     /**
      * コンパイラが返した function をスタックスロットの 0 番目にプッシュする．
      * ref. 「NOTE: VM が内部的に利用するローカル変数の予約」
+     *
+     * NOTE: GC がゴミだと勘違いしないように function も一旦プッシュしてからポップする．
      */
     push(OBJ_VAL(function));
-    call(function, 0);
+    ObjClosure* closure = newClosure(function);
+    pop();
+    push(OBJ_VAL(closure));
+    call(closure, 0);
 
     return run();
 }
