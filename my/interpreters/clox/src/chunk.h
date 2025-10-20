@@ -19,6 +19,8 @@ typedef enum {
     OP_GET_GLOBAL, // グローバル変数を取得し，スタックにプッシュする．@operand: 取得する変数名が格納されている定数表のインデックス
     OP_DEFINE_GLOBAL, // グローバル変数を保存する．@operand: 保存する変数名が格納されている定数表のインデックス
     OP_SET_GLOBAL, // グローバル変数を上書きする．@operand: 上書きする変数名が格納されている定数表のインデックス
+    OP_GET_UPVALUE, // @operand: 取得する上位値が格納されているインデックス
+    OP_SET_UPVALUE, // @operand: 上書きする上位値が格納されているインデックス
     OP_EQUAL, // == （NOTE: OP_NOT と組み合わせることで != を表現可能）
     OP_GREATER, // > （NOTE: OP_NOT と組み合わせることで <= を表現可能）
     OP_LESS, // < （NOTE: OP_NOT と組み合わせることで >= を表現可能）

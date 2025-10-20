@@ -54,6 +54,18 @@ typedef struct {
     int depth; // このローカル変数を宣言したブロックを囲んでいるブロックの数（scopeDepth）．NOTE: -1 の場合は未初期化状態であることを表す．
 } Local;
 
+/**
+ * 上位値
+ *
+ * @note 上位値とは：
+ *       クロージャがキャプチャした関数の外側で宣言されたローカル変数が，
+ *       スタックから移動した後でも探索可能にするための間接参照のレイヤー
+ */
+typedef struct {
+    uint8_t index;
+    bool isLocal;
+} Upvalue;
+
 typedef enum {
     TYPE_FUNCTION, // 関数本文
     TYPE_SCRIPT, // トップレベルコード
@@ -66,9 +78,9 @@ typedef struct Compiler {
     struct Compiler* enclosing; // 自身を囲む Compiler へのポインタ．NOTE: これにより，ネストした Compiler の連結リストを構成する．WARNING: struct がないと循環参照になってしまう．
     ObjFunction* function; // コンパイラの出力先となる関数オブジェクトへのポインタ．NOTE: 単純化のため，トップレベルコードも暗黙的な関数の中にラップされているものとして扱う．
     FunctionType type; // 対象のコードがトップレベルなのか，関数本文なのかを判別するためのフラグ．
-
     Local locals[UINT8_COUNT]; // コンパイル時点でスコープに入る全てのローカル変数を格納する配列．NOTE: オペランドが 1 バイトまでと決まっているので，要素数にも固定の上限（UINT8_COUNT）が存在する．
     int localCount; // スコープ内のローカル変数の個数
+    Upvalue upvalues[UINT8_COUNT]; // コンパイル時点でスコープに入る全ての上位値を格納する配列．NOTE: オペランドが 1 バイトまでと決まっているので，要素数にも固定の上限（UINT8_COUNT）が存在する．
     int scopeDepth; // 今コンパイルしているコードを囲んでいるブロックの数（e.g. 0 = グローバルスコープ，1 = トップレベルブロック）
 } Compiler;
 
@@ -351,7 +363,7 @@ static bool identifierEqual(Token* a, Token* b) {
  * @return -1:      name に一致する変数が見つからなかった．
  *         -1 以外: name に一致する識別子で，一番最後（最新）に宣言された変数が置かれているインデックス．
  *
- * @note シャドーイング
+ * @note シャドーイング：
  *       ローカル変数の配列を後ろから辿っていくことで，一番最後（最新）に宣言された変数のインデックスを返す．
  */
 static int resolveLocal(Compiler* compiler, Token* name) {
@@ -374,6 +386,44 @@ static int resolveLocal(Compiler* compiler, Token* name) {
             }
             return i;
         }
+    }
+
+    return -1;
+}
+
+static int addUpvalue(Compiler* compiler, uint8_t index, bool isLocal) {
+    int upvalueCount = compiler->function->upvalueCount;
+
+    // 所与のインデックスの上位値がすでに解決済みであれば，それを参照するだけ．
+    for (int i = 0; i < upvalueCount; i++) {
+        Upvalue* upvalue = &compiler->upvalues[i];
+        if (upvalue->index == index && upvalue->isLocal == isLocal) {
+            return i;
+        }
+    }
+
+    if (upvalueCount == UINT8_COUNT) {
+        error("Too many closure variables in function.");
+        return 0;
+    }
+
+    compiler->upvalues[upvalueCount].isLocal = isLocal;
+    compiler->upvalues[upvalueCount].index = index;
+    return compiler->function->upvalueCount++;
+}
+
+/**
+ * @return 上位値における変数が配置されているインデックス．変数が見つからなければ -1 を返す．
+ * @note 上位値とは：
+ *       クロージャがキャプチャした関数の外側で宣言されたローカル変数が，
+ *       スタックから移動した後でも探索可能にするための間接参照のレイヤー
+ */
+static int resolveUpvalue(Compiler* compiler, Token* name) {
+    if (compiler->enclosing == NULL) return -1;
+
+    int local = resolveLocal(compiler->enclosing, name);
+    if (local != -1) {
+        return addUpvalue(compiler, (uint8_t)local, true);
     }
 
     return -1;
@@ -624,6 +674,9 @@ static void namedVariable(Token name, bool canAssign) {
     if (arg != -1) {
         getOp = OP_GET_LOCAL;
         setOp = OP_SET_LOCAL;
+    } else if ((arg = resolveUpvalue(current, &name)) != -1) {
+        getOp = OP_GET_UPVALUE;
+        setOp = OP_SET_UPVALUE;
     } else {
         arg = identifierConstant(&name);
         getOp = OP_GET_GLOBAL;

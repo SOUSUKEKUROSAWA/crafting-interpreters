@@ -40,6 +40,7 @@ struct Obj {
 typedef struct {
     Obj obj; // オブジェクト型共通のデータ．NOTE: 構造体継承：このフィールドを先頭に持ってくることで，ObjFunction* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
     int arity; // その関数が受け取りたいパラメータの数
+    int upvalueCount; // その関数がキャプチャした上位値の個数
     Chunk chunk; // 関数の本文を格納するチャンク
     ObjString* name; // 関数名（ランタイムエラー時などに利用する）
 } ObjFunction;
