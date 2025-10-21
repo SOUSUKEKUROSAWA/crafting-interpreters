@@ -39,7 +39,7 @@ struct Obj {
 };
 
 typedef struct {
-    Obj obj; // オブジェクト型共通のデータ．NOTE: 構造体継承：このフィールドを先頭に持ってくることで，ObjFunction* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
+    Obj obj; // オブジェクト型共通のデータ．@note 構造体継承：このフィールドを先頭に持ってくることで，ObjFunction* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
     int arity; // その関数が受け取りたいパラメータの数
     int upvalueCount; // その関数がキャプチャした上位値の個数
     Chunk chunk; // 関数の本文を格納するチャンク
@@ -53,19 +53,19 @@ typedef struct {
 typedef Value (*NativeFn)(int argCount, Value* args);
 
 typedef struct {
-    Obj obj; // オブジェクト型共通のデータ．NOTE: 構造体継承：このフィールドを先頭に持ってくることで，ObjFunction* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
+    Obj obj; // オブジェクト型共通のデータ（構造体継承）．
     NativeFn function; // ネイティブ関数（言語組み込みの関数）へのポインタ．
 } ObjNative;
 
 struct ObjString {
-    Obj obj; // オブジェクト型共通のデータ．NOTE: 構造体継承：このフィールドを先頭に持ってくることで，ObjString* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
+    Obj obj; // オブジェクト型共通のデータ（構造体継承）．
     int length; // 割り当てられたバイト数
     char* chars; // 文字配列の先頭へのポインタ
     uint32_t hash; // その文字列に対応するハッシュ（ハッシュ再計算を不要にするためにキャッシュとして保持）
 };
 
 typedef struct ObjUpvalue {
-    Obj obj; // オブジェクト型共通のデータ．NOTE: 構造体継承：このフィールドを先頭に持ってくることで，ObjString* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
+    Obj obj; // オブジェクト型共通のデータ（構造体継承）．
     Value* location; // 閉じ込めた（クロージャ・キャプチャした）変数へのポインタ
 } ObjUpvalue;
 
@@ -74,8 +74,10 @@ typedef struct ObjUpvalue {
  * 実行時の変数なども閉じ込めて（Closure して）おく構造体．
  */
 typedef struct {
-    Obj obj;
+    Obj obj; // オブジェクト型共通のデータ（構造体継承）．
     ObjFunction* function;
+    ObjUpvalue** upvalues; // このクロージャがキャプチャしている上位値ポインタの配列（ダブルポインタ）．
+    int upvalueCount; // このクロージャが保持する上位値の数．@note ObjFunction も upvalueCount を保持しているので，本来は不要だが，GCが ObjClousure の上位値配列サイズを知りたい場合があるので，あえて冗長性を持たせている．
 } ObjClosure;
 
 ObjClosure* newClosure(ObjFunction* function);

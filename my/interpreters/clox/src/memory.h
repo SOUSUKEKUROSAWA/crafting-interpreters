@@ -4,7 +4,9 @@
 #include "common.h"
 #include "object.h"
 
-// NOTE: void* ではなく，指定した type としてポインタを返すためにマクロでラップしている．
+/**
+ * @note void* ではなく，指定した type としてポインタを返すためにマクロでラップしている．
+ */
 #define ALLOCATE(type, count) \
     (type*)reallocate(NULL, 0, sizeof(type) * (count))
 

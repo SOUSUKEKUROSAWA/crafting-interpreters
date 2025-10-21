@@ -20,6 +20,9 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
 static void freeObject(Obj* object) {
     switch (object->type) {
         case OBJ_CLOSURE: {
+            ObjClosure* closure = (ObjClosure*)object;
+            // NOTE: ObjUpvalue そのものは所有しないが，上位値へのポインタを含む配列は所有するので，ここで解放する．
+            FREE_ARRAY(ObjUpvalue*, closure->upvalues, closure->upvalueCount);
             // NOTE: ObjFunction は所有していないので解放もしない．
             FREE(ObjClosure, object);
             break;

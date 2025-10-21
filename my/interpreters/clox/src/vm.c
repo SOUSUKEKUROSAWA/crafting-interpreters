@@ -137,6 +137,11 @@ static bool callValue(Value callee, int argCount) {
     return false;
 }
 
+static ObjUpvalue* captureUpvalue(Value* local) {
+    ObjUpvalue* createdUpvalue = newUpvalue(local);
+    return createdUpvalue;
+}
+
 /**
  * @return true: 入力が Falsey な値（nil or false）, false: 入力が Falsey ではない値
  */
@@ -297,6 +302,17 @@ static InterpretResult run() {
                 // NOTE: 代入は式なので，大きな式の中にネストしている可能性を考慮して，スタックからポップしない（残しておく）．
                 break;
             }
+            case OP_GET_UPVALUE: {
+                uint8_t slot = READ_BYTE();
+                push(*frame->closure->upvalues[slot]->location);
+                break;
+            }
+            case OP_SET_UPVALUE: {
+                uint8_t slot = READ_BYTE();
+                *frame->closure->upvalues[slot]->location = peek(0);
+                // 代入は式なのでスタックの値はポップせずに残しておく．
+                break;
+            }
             case OP_EQUAL: {
                 Value b = pop();
                 Value a = pop();
@@ -381,6 +397,23 @@ static InterpretResult run() {
                 ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
                 ObjClosure* closure = newClosure(function);
                 push(OBJ_VAL(closure));
+
+                for (int i = 0; i < closure->upvalueCount; i++) {
+                    uint8_t isLocal = READ_BYTE();
+                    uint8_t index = READ_BYTE();
+                    if (isLocal) {
+                        closure->upvalues[i] = captureUpvalue(frame->slots + index);
+                    } else {
+                        /**
+                         * OP_CLOSURE 命令は関数宣言の最後に出力されるので，
+                         * 実行時には，
+                         * 「参照すべき外側のクロージャ＝現在のCallFrameに格納されているクロージャ」
+                         * という状態になっている．
+                         */
+                        closure->upvalues[i] = frame->closure->upvalues[index];
+                    }
+                }
+
                 break;
             }
             case OP_RETURN: {
