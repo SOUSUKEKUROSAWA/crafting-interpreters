@@ -59,7 +59,8 @@ typedef struct {
  *
  * @note 上位値とは：
  *       クロージャがキャプチャした関数の外側で宣言されたローカル変数が，
- *       スタックから移動した後でも探索可能にするための間接参照のレイヤー
+ *       スタックから移動した後でも探索可能にするための間接参照のレイヤー．
+ *       つまり，スタック上の動的なローカル変数を，ヒープ上の静的な外部ローカル変数に昇格したもの．
  */
 typedef struct {
     uint8_t index;
@@ -391,6 +392,9 @@ static int resolveLocal(Compiler* compiler, Token* name) {
     return -1;
 }
 
+/**
+ * @param isLocal true: クロージャがローカル変数をキャプチャする．false: 外側の関数から得た上位値をキャプチャする
+ */
 static int addUpvalue(Compiler* compiler, uint8_t index, bool isLocal) {
     int upvalueCount = compiler->function->upvalueCount;
 
@@ -414,9 +418,6 @@ static int addUpvalue(Compiler* compiler, uint8_t index, bool isLocal) {
 
 /**
  * @return 上位値における変数が配置されているインデックス．変数が見つからなければ -1 を返す．
- * @note 上位値とは：
- *       クロージャがキャプチャした関数の外側で宣言されたローカル変数が，
- *       スタックから移動した後でも探索可能にするための間接参照のレイヤー
  */
 static int resolveUpvalue(Compiler* compiler, Token* name) {
     if (compiler->enclosing == NULL) return -1;
@@ -424,6 +425,12 @@ static int resolveUpvalue(Compiler* compiler, Token* name) {
     int local = resolveLocal(compiler->enclosing, name);
     if (local != -1) {
         return addUpvalue(compiler, (uint8_t)local, true);
+    }
+
+    // さらに外側のローカル変数を探すため，上位値を再帰的に辿っていく．
+    int upvalue = resolveUpvalue(compiler->enclosing, name);
+    if (upvalue != -1) {
+        return addUpvalue(compiler, (uint8_t)upvalue, false);
     }
 
     return -1;
@@ -836,6 +843,11 @@ static void function(FunctionType type) {
 
     ObjFunction* function = endCompiler();
     emitBytes(OP_CLOSURE, makeConstant(OBJ_VAL(function)));
+    // OP_CLOSURE のオペランド
+    for (int i = 0; i < function->upvalueCount; i++) {
+        emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
+        emitByte(compiler.upvalues[i].index);
+    }
 }
 
 static void funDeclaration() {
