@@ -23,6 +23,7 @@ typedef enum {
     OBJ_FUNCTION,
     OBJ_NATIVE,
     OBJ_STRING,
+    OBJ_UPVALUE,
 } ObjType;
 
 /**
@@ -63,6 +64,11 @@ struct ObjString {
     uint32_t hash; // その文字列に対応するハッシュ（ハッシュ再計算を不要にするためにキャッシュとして保持）
 };
 
+typedef struct ObjUpvalue {
+    Obj obj; // オブジェクト型共通のデータ．NOTE: 構造体継承：このフィールドを先頭に持ってくることで，ObjString* を Obj* に安全にキャストできる（先頭が完全に一致するため）．
+    Value* location; // 閉じ込めた（クロージャ・キャプチャした）変数へのポインタ
+} ObjUpvalue;
+
 /**
  * 関数実行時に ObjFunction をラップして，
  * 実行時の変数なども閉じ込めて（Closure して）おく構造体．
@@ -77,6 +83,7 @@ ObjFunction* newFunction();
 ObjNative* newNative(NativeFn function);
 ObjString* takeString(char* chars, int length);
 ObjString* copyString(const char* chars, int length);
+ObjUpvalue* newUpvalue(Value* slot);
 
 void printObject(Value value);
 

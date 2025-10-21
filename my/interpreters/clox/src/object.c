@@ -7,7 +7,9 @@
 #include "value.h"
 #include "vm.h"
 
-// NOTE: Obj* ではなく，指定した type としてポインタを返すためにマクロでラップしている．
+/**
+ * @note Obj* ではなく，指定した type としてポインタを返すためにマクロでラップしている．
+ */
 #define ALLOCATE_OBJ(type, objectType) \
     (type*)allocateObject(sizeof(type), objectType)
 
@@ -108,6 +110,12 @@ ObjString* copyString(const char* chars, int length) {
     return allocateString(heapChars, length, hash);
 }
 
+ObjUpvalue* newUpvalue(Value* slot) {
+    ObjUpvalue* upvalue = ALLOCATE_OBJ(ObjUpvalue, OBJ_UPVALUE);
+    upvalue->location = slot;
+    return upvalue;
+}
+
 static void printFunction(ObjFunction* function) {
     if (function->name == NULL) {
         // トップレベルコードの場合（関数名の有無で判別している）
@@ -124,5 +132,6 @@ void printObject(Value value) {
         case OBJ_FUNCTION: printFunction(AS_FUNCTION(value)); break;
         case OBJ_NATIVE: printf("<native fn>"); break;
         case OBJ_STRING: printf("%s", AS_CSTRING(value)); break;
+        case OBJ_UPVALUE: printf("upvalue"); break;
     }
 }
