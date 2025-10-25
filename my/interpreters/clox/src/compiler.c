@@ -52,15 +52,19 @@ typedef struct {
 typedef struct {
     Token name;
     int depth; // このローカル変数を宣言したブロックを囲んでいるブロックの数（scopeDepth）．NOTE: -1 の場合は未初期化状態であることを表す．
+    bool isCaptured; // true: このローカル変数が，後にネストされる関数宣言によってキャプチャされている．
 } Local;
 
 /**
  * 上位値
  *
- * @note 上位値とは：
+ * @note 上位値（upvalue）とは：
  *       クロージャがキャプチャした関数の外側で宣言されたローカル変数が，
  *       スタックから移動した後でも探索可能にするための間接参照のレイヤー．
  *       つまり，スタック上の動的なローカル変数を，ヒープ上の静的な外部ローカル変数に昇格したもの．
+ *       （Lua 言語で利用されている概念）
+ * @note open upvalue: まだスタック上のローカル変数を指している上位値．
+ *       closed upvalue: ヒープに移されたローカル変数を指している上位値．
  */
 typedef struct {
     uint8_t index;
@@ -291,6 +295,7 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
      */
     Local* local = &current->locals[current->localCount++];
     local->depth = 0;
+    local->isCaptured = false;
     local->name.start = "";
     local->name.length = 0;
 }
@@ -324,7 +329,12 @@ static void endScope() {
         current->localCount > 0
         && current->locals[current->localCount - 1].depth > current->scopeDepth
     ) {
-        emitByte(OP_POP);
+        if (current->locals[current->localCount - 1].isCaptured) {
+            emitByte(OP_CLOSE_UPVALUE);
+        } else {
+            emitByte(OP_POP);
+        }
+
         current->localCount--;
     }
 }
@@ -424,6 +434,7 @@ static int resolveUpvalue(Compiler* compiler, Token* name) {
 
     int local = resolveLocal(compiler->enclosing, name);
     if (local != -1) {
+        compiler->enclosing->locals[local].isCaptured = true;
         return addUpvalue(compiler, (uint8_t)local, true);
     }
 
@@ -446,6 +457,7 @@ static void addLocal(Token name) {
 
     local->name = name;
     local->depth = -1; // 未初期化状態を表す．
+    local->isCaptured = false;
 }
 
 /**
