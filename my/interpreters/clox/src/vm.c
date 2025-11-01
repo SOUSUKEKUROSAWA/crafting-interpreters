@@ -164,6 +164,29 @@ static ObjUpvalue* captureUpvalue(Value* local) {
 }
 
 /**
+ * 所与のスタックスロットにあるローカル変数（open upvalue）か，
+ * スタックでそれより上にあるスロットを指すローカル変数（open upvalue）を探して，
+ * それら全てをヒープに移す（クローズする）．
+ *
+ * @param last クローズ対象の境界となるスタックスロットのアドレス．
+ */
+static void closeUpvalues(Value* last) {
+    /**
+     * open upvalue のリストをトップからボトムに向けて辿って，
+     * 範囲内の上位値をすべてクローズする．
+     */
+    while (
+        vm.openUpvalues != NULL
+        && vm.openUpvalues->location >= last
+    ) {
+        ObjUpvalue* upvalue = vm.openUpvalues;
+        upvalue->closed = *upvalue->location; // 変数の値をヒープ（closed）にコピーする．
+        upvalue->location = &upvalue->closed; // 参照先をスタックからヒープ（closed）に切り替える．
+        vm.openUpvalues = upvalue->next; // open upvalue のリストから削除する（処理済みの upvalue をリストの追跡から外す）．
+    }
+}
+
+/**
  * @return true: 入力が Falsey な値（nil or false）, false: 入力が Falsey ではない値
  */
 static bool isFalsey(Value value) {
@@ -437,8 +460,13 @@ static InterpretResult run() {
 
                 break;
             }
+            case OP_CLOSE_UPVALUE:
+                closeUpvalues(vm.stackTop - 1);
+                pop(); // ヒープに移されたので，スタック上の値はもういらない．
+                break;
             case OP_RETURN: {
                 Value result = pop(); // 一時退避
+                closeUpvalues(frame->slots); // 現在の関数が所有するオープン上位値（パラメータや関数内で直接宣言されたローカルなども含む）を全てクローズする．
                 vm.frameCount--;
 
                 if (vm.frameCount == 0) {

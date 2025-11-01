@@ -67,6 +67,7 @@ struct ObjString {
 typedef struct ObjUpvalue {
     Obj obj; // オブジェクト型共通のデータ（構造体継承）．
     Value* location; // 閉じ込めた（クロージャ・キャプチャした）変数へのポインタ
+    Value closed; // closed upvalue の置き場所となるヒープ領域．スタックにあったローカル変数が解放時にここに移されることで，任意のクロージャがスタック解放後もキャプチャしたローカル変数にアクセスできる．
     struct ObjUpvalue* next; // スタックのより後方（下方）にあるローカル変数を参照する「次の open upvalue」へのポインタ．ref. @note open upvalue:
 } ObjUpvalue;
 
