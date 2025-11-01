@@ -51,6 +51,7 @@ typedef struct {
      */
     Table strings; // インターン化済みの文字列の一覧（ハッシュ表）
 
+    ObjUpvalue* openUpvalues; // open upvalue の連結リストの先頭へのポインタ．ref. @note open upvalue:
     Obj* objects; // 追跡用の Obj チェーン（リスト）の先頭へのポインタ
 } VM;
 
