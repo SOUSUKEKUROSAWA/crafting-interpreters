@@ -854,11 +854,18 @@ static void function(FunctionType type) {
     block();
 
     ObjFunction* function = endCompiler();
-    emitBytes(OP_CLOSURE, makeConstant(OBJ_VAL(function)));
-    // OP_CLOSURE のオペランド
-    for (int i = 0; i < function->upvalueCount; i++) {
-        emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
-        emitByte(compiler.upvalues[i].index);
+    uint8_t functionConstant = makeConstant(OBJ_VAL(function));
+    if (function->upvalueCount > 0) {
+        emitBytes(OP_CLOSURE, functionConstant);
+
+        // OP_CLOSURE のオペランド
+        for (int i = 0; i < function->upvalueCount; i++) {
+            emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
+            emitByte(compiler.upvalues[i].index);
+        }
+    } else {
+        // クロージャではない（キャプチャする上位値がない）場合
+        emitBytes(OP_CONSTANT, functionConstant);
     }
 }
 

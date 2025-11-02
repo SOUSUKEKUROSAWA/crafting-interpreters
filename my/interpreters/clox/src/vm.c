@@ -23,6 +23,14 @@ static void resetStack() {
     vm.openUpvalues = NULL;
 }
 
+static inline ObjFunction* getFrameFunction(CallFrame* frame) {
+    if (frame->function->type == OBJ_FUNCTION) {
+        return (ObjFunction*)frame->function;
+    } else {
+        return ((ObjClosure*)frame->function)->function;
+    }
+}
+
 /**
  * 可変長引数のエラーログ関数
  *
@@ -38,7 +46,7 @@ static void runtimeError(const char* format, ...) {
     // NOTE: Stack Trace
     for (int i = vm.frameCount - 1; i >= 0; i--) {
         CallFrame* frame = &vm.frames[i];
-        ObjFunction* function = frame->closure->function;
+        ObjFunction* function = getFrameFunction(frame);
         size_t instruction = frame->ip - function->chunk.code - 1;
 
         fprintf(stderr, "[line %d] in ", function->chunk.lines[instruction]);
@@ -94,9 +102,9 @@ static Value peek(int distance) {
     return vm.stackTop[-1 - distance];
 }
 
-static bool call(ObjClosure* closure, int argCount) {
-    if (argCount != closure->function->arity) {
-        runtimeError("Expected %d arguments but got %d.", closure->function->arity, argCount);
+static bool call(Obj* callee, ObjFunction* function, int argCount) {
+    if (argCount != function->arity) {
+        runtimeError("Expected %d arguments but got %d.", function->arity, argCount);
         return false;
     }
 
@@ -106,10 +114,18 @@ static bool call(ObjClosure* closure, int argCount) {
     }
 
     CallFrame* frame = &vm.frames[vm.frameCount++];
-    frame->closure = closure;
-    frame->ip = closure->function->chunk.code;
+    frame->function = (Obj*)callee;
+    frame->ip = function->chunk.code;
     frame->slots = vm.stackTop - argCount - 1; // スタックスロットの 0 番目は予約済み（関数オブジェクト自身が配置される）ので -1 が必要．
     return true;
+}
+
+static bool callClosure(ObjClosure* closure, int argCount) {
+    return call((Obj*)closure, closure->function, argCount);
+}
+
+static bool callFunction(ObjFunction* function, int argCount) {
+    return call((Obj*)function, function, argCount);
 }
 
 /**
@@ -121,7 +137,9 @@ static bool callValue(Value callee, int argCount) {
     if (IS_OBJ(callee)) {
         switch (OBJ_TYPE(callee)) {
             case OBJ_CLOSURE:
-                return call(AS_CLOSURE(callee), argCount);
+                return callClosure(AS_CLOSURE(callee), argCount);
+            case OBJ_FUNCTION:
+                return callFunction(AS_FUNCTION(callee), argCount);
             case OBJ_NATIVE: {
                 NativeFn native = AS_NATIVE(callee);
                 // Cの関数として呼び出して（Cに制御を委ねて），結果を受け取る．
@@ -232,7 +250,7 @@ static InterpretResult run() {
  * 対応する値を取り出す．
  * （ip を１つ次に進める）
  */
-#define READ_CONSTANT() (frame->closure->function->chunk.constants.values[READ_BYTE()])
+#define READ_CONSTANT() (getFrameFunction(frame)->chunk.constants.values[READ_BYTE()])
 
 /**
  * チャンクから次の2バイトを取り出して，16ビットの符号なし整数を組み立てる．
@@ -285,8 +303,8 @@ static InterpretResult run() {
         printf("\n");
 
         disassembleInstruction(
-            &frame->closure->function->chunk,
-            (int)(frame->ip - frame->closure->function->chunk.code)
+            &getFrameFunction(frame)->chunk,
+            (int)(frame->ip - getFrameFunction(frame)->chunk.code)
         );
 #endif
 
@@ -348,12 +366,14 @@ static InterpretResult run() {
             }
             case OP_GET_UPVALUE: {
                 uint8_t slot = READ_BYTE();
-                push(*frame->closure->upvalues[slot]->location);
+                ObjClosure* closure = AS_CLOSURE(OBJ_VAL(frame->function));
+                push(*closure->upvalues[slot]->location);
                 break;
             }
             case OP_SET_UPVALUE: {
                 uint8_t slot = READ_BYTE();
-                *frame->closure->upvalues[slot]->location = peek(0);
+                ObjClosure* closure = AS_CLOSURE(OBJ_VAL(frame->function));
+                *closure->upvalues[slot]->location = peek(0);
                 // 代入は式なのでスタックの値はポップせずに残しておく．
                 break;
             }
@@ -454,7 +474,8 @@ static InterpretResult run() {
                          * 「参照すべき外側のクロージャ＝現在のCallFrameに格納されているクロージャ」
                          * という状態になっている．
                          */
-                        closure->upvalues[i] = frame->closure->upvalues[index];
+                        ObjClosure* currentClosure = AS_CLOSURE(OBJ_VAL(frame->function));
+                        closure->upvalues[i] = currentClosure->upvalues[index];
                     }
                 }
 
@@ -504,7 +525,7 @@ InterpretResult interpret(const char* source) {
     ObjClosure* closure = newClosure(function);
     pop();
     push(OBJ_VAL(closure));
-    call(closure, 0);
+    call((Obj*)closure, closure->function, 0);
 
     return run();
 }

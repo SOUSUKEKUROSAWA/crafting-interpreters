@@ -16,7 +16,7 @@
  *       コールフレーム（call frame）と呼ぶ．
  */
 typedef struct {
-    ObjClosure* closure; // 今実行しているクロージャへのポインタ．NOTE: ここから関数のチャンクにアクセス可能．
+    Obj* function;
     uint8_t* ip; // 次に実行する命令へのポインタ（命令ポインタ = Instruction Pointer の略）．NOTE: 高速化のためバイトコード配列内を直接参照する．NOTE: 現在の関数自身が呼び出した関数のリターンアドレスとしても利用される．
     Value* slots; // VMの値スタックにおいて，その関数が利用できる最初のスロットへのポインタ．NOTE: 関数内のローカル変数は，このスロットからの相対位置で表され，slots[x] のようにアクセスできる．
 } CallFrame;
