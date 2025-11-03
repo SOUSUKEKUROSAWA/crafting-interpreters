@@ -914,13 +914,22 @@ static void forStatement() {
      */
     beginScope();
 
+    // 1: ループ変数の名前と位置を取得し、後で参照できるようにする．
+    int loopVariable = -1;
+    Token loopVariableName;
+    loopVariableName.start = NULL;
+
     // 初期化節
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
-    if (match(TOKEN_SEMICOLON)) {
-        // 初期化子なし
-    } else if (match(TOKEN_VAR)) {
+    if (match(TOKEN_VAR)) {
         // 変数宣言
+        // 1: ループ変数の名前を取得．
+        loopVariableName = parser.current;
         varDeclaration();
+        // 1: その位置も取得
+        loopVariable = current->localCount - 1;
+    } else if (match(TOKEN_SEMICOLON)) {
+        // 初期化子なし
     } else {
         // 式文（＝スタックに何も残さない）
         expressionStatement();
@@ -961,8 +970,42 @@ static void forStatement() {
         patchJump(bodyJump);
     }
 
+    /**
+     * 1: ループ変数コピーとなる変数を内側に同名で作成することで，
+     *    元のループ変数を隠蔽（シャドウ）する．
+     *    これにより，ループ内でのループ変数の参照はこの内部変数を参照することになる（元の変数より先に検索にヒットするため）．
+     */
+    int innerVariable = -1;
+    if (loopVariable != -1) {
+        // 1: ループ変数コピー用のスコープを開始．
+        beginScope();
+        // 1: ループ変数の現在の値で初期化された新しい変数を定義する．
+        emitBytes(OP_GET_LOCAL, (uint8_t)loopVariable);
+        addLocal(loopVariableName);
+        markInitialized();
+        // 1: 内部変数として，その位置を保存する．
+        innerVariable = current->localCount - 1;
+    }
+
     // 本文
     statement();
+
+    /**
+     * 3: 内部変数の現在の値を、シャドウ対象のループ変数に格納し直す．
+     *
+     * @warning この処理がないと，ループ本体内でループ変数に明示的に変更を加えた場合、
+     *          ループ条件とインクリメント句に正しく反映されず、無限ループに陥る．
+     */
+    if (loopVariable != -1) {
+        // 3: 内部変数をループ変数に再び格納する。
+        emitBytes(OP_GET_LOCAL, (uint8_t)innerVariable);
+        emitBytes(OP_SET_LOCAL, (uint8_t)loopVariable);
+        emitByte(OP_POP);
+
+        // 4: ループ変数コピーのための一時的なスコープを閉じる．
+        endScope();
+    }
+
     /**
      * NOTE: インクリメント節の，コンパイルタイミングと実行タイミングのずれ問題への対処 ②
      *       インクリメント節がない場合 → loopStart == loopStart （条件節）にループバック
