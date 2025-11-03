@@ -1,5 +1,6 @@
 #include <stdlib.h>
 
+#include "compiler.h"
 #include "memory.h"
 #include "vm.h"
 
@@ -77,16 +78,33 @@ static void freeObject(Obj* object) {
 }
 
 /**
- * 直接参照可能なルートオブジェクトの走査
+ * 直接参照可能なルートオブジェクトの走査とマーキング
  */
 static void markRoots() {
-    // スタック上の値（ローカル変数，一時的な値）のマーキング
+    // スタック上の値（ローカル変数，一時的な値）
     for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
         markValue(*slot);
     }
 
-    // グローバル変数上の値のマーキング
+    // コールフレームのスタック
+    for (int i = 0; i < vm.frameCount; i++) {
+        markObject((Obj*)vm.frames[i].closure);
+    }
+
+    // オープン上位値のリスト
+    for (
+        ObjUpvalue* upvalue = vm.openUpvalues;
+        upvalue != NULL;
+        upvalue = upvalue->next
+    ) {
+        markObject((Obj*)upvalue);
+    }
+
+    // グローバル変数のハッシュ表
     markTable(&vm.globals);
+
+    // コンパイラが直接アクセスする値
+    markCompilerRoots();
 }
 
 void collectGarbage() {
