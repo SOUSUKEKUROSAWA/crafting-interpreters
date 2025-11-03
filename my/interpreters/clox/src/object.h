@@ -35,6 +35,7 @@ typedef enum {
  */
 struct Obj {
     ObjType type;
+    bool isMarked; // GCがリサイクルするオブジェクトを判定するためのフラグ．GC実行時に到達可能であれば true がセットされ，false のものは到達不可能と見なされリサイクルされる．
     struct Obj* next; // 追跡用の Obj チェーン（リスト）における，次の Obj へのポインタ
 };
 

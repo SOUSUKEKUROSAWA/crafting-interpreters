@@ -16,8 +16,8 @@
 static Obj* allocateObject(size_t size, ObjType type) {
     Obj* object = (Obj*)reallocate(NULL, 0, size);
     object->type = type;
-    // 末尾ではなく，先頭に順に繋いでいく．
-    object->next = vm.objects;
+    object->isMarked = false;
+    object->next = vm.objects; // 末尾ではなく，先頭に順に繋いでいく．
     vm.objects = object;
 
 #ifdef DEBUG_LOG_GC
