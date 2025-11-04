@@ -39,6 +39,25 @@ void markObject(Obj* object) {
 #endif
 
     object->isMarked = true;
+
+    /**
+     * NOTE: 三色抽象化
+     *       white：未処理のオブジェクト
+     *       gray：到達可能だが，参照する子オブジェクトの走査は未完了なオブジェクト
+     *       black：到達可能で，参照する子オブジェクトの操作も完了しているオブジェクト
+     */
+    if (vm.grayCapacity < vm.grayCount + 1) {
+        vm.grayCapacity = GROW_CAPACITY(vm.grayCapacity);
+        /**
+         * WARNING: grayStack の拡大が原因でGCを再帰的に起動させてしまわないように，
+         *          reallocate ではなく，システムの realloc を直接呼び出す．
+         */
+        vm.grayStack = (Obj**)realloc(vm.grayStack, sizeof(Obj*) * vm.grayCapacity);
+    }
+
+    vm.grayStack[vm.grayCount++] = object;
+
+    if (vm.grayStack == NULL) exit(1); // アロケーションの失敗．
 }
 
 void markValue(Value value) {
@@ -127,4 +146,6 @@ void freeObjects() {
         freeObject(object);
         object = next;
     }
+
+    free(vm.grayStack);
 }

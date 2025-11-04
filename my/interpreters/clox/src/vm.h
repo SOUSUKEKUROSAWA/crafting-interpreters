@@ -53,6 +53,9 @@ typedef struct {
 
     ObjUpvalue* openUpvalues; // open upvalue の連結リストの先頭へのポインタ．ref. @note open upvalue:
     Obj* objects; // 追跡用の Obj チェーン（リスト）の先頭へのポインタ
+    int grayCount; // グレーオブジェクトの個数（動的配列内での利用済みの容量）．
+    int grayCapacity; // グレーオブジェクトの動的配列の総容量
+    Obj** grayStack; // グレーオブジェクトの動的配列．@note ダブルポインタ（Obj* の配列）
 } VM;
 
 typedef enum {

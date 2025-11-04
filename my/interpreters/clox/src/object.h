@@ -79,7 +79,7 @@ typedef struct ObjUpvalue {
 typedef struct {
     Obj obj; // オブジェクト型共通のデータ（構造体継承）．
     ObjFunction* function;
-    ObjUpvalue** upvalues; // このクロージャがキャプチャしている上位値ポインタの配列（ダブルポインタ）．
+    ObjUpvalue** upvalues; // このクロージャがキャプチャしている上位値ポインタの配列．@note ダブルポインタ
     int upvalueCount; // このクロージャが保持する上位値の数．@note ObjFunction も upvalueCount を保持しているので，本来は不要だが，GCが ObjClousure の上位値配列サイズを知りたい場合があるので，あえて冗長性を持たせている．
 } ObjClosure;
 
