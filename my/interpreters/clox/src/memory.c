@@ -31,6 +31,7 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
 
 void markObject(Obj* object) {
     if (object == NULL) return;
+    if (object->isMarked) return; // オブジェクト参照が閉路になっている場合の無限ループを防ぐ．
 
 #ifdef DEBUG_LOG_GC
     printf("%p mark ", (void*)object);
@@ -65,6 +66,52 @@ void markValue(Value value) {
     if (IS_OBJ(value)) markObject(AS_OBJ(value));
 }
 
+static void markArray(ValueArray* array) {
+    for (int i = 0; i < array->count; i++) {
+        markValue(array->values[i]);
+    }
+}
+
+/**
+ * 所与のオブジェクトの参照を辿って暗黒化（blacken）する．
+ *
+ * @note 暗黒化：白オブジェクトをグレーに，グレーオブジェクトを黒に変える．ref. 三色抽象化
+ * @note 黒オブジェクト：isMarked が true の状態で，グレースタックから外れたオブジェクトのこと．
+ */
+static void blackenObject(Obj* object) {
+#ifdef DEBUG_LOG_GC
+    printf("%p blacken ", (void*)object);
+    printValue(OBJ_VAL(object));
+    printf("\n");
+#endif
+
+    switch (object->type) {
+        // note: 変数宣言を含む文は，スコープの関係で {} で囲む必要がある．
+        case OBJ_CLOSURE: {
+            ObjClosure* closure = (ObjClosure*)object;
+            markObject((Obj*)closure->function);
+            for (int i = 0; i < closure->upvalueCount; i++) {
+                markObject((Obj*)closure->upvalues[i]);
+            }
+            break;
+        }
+        case OBJ_FUNCTION: {
+            ObjFunction* function = (ObjFunction*)object;
+            markObject((Obj*)function->name);
+            markArray(&function->chunk.constants); // 関数内で使用する他のオブジェクトへの参照群．
+            break;
+        }
+        case OBJ_UPVALUE:
+            markValue(((ObjUpvalue*)object)->closed);
+            break;
+
+        // オブジェクト参照を含まないので，さらに辿るべきものがないタイプ
+        case OBJ_NATIVE:
+        case OBJ_STRING:
+            break;
+    }
+}
+
 static void freeObject(Obj* object) {
 #ifdef DEBUG_LOG_GC
     printf("%p free type %d\n", (void*)object, object->type);
@@ -97,7 +144,9 @@ static void freeObject(Obj* object) {
 }
 
 /**
- * 直接参照可能なルートオブジェクトの走査とマーキング
+ * 直接参照可能なルートオブジェクトを走査し，マーキングとグレースタックへの追加を行う．
+ *
+ * ref. 三色抽象化
  */
 static void markRoots() {
     // スタック上の値（ローカル変数，一時的な値）
@@ -126,12 +175,26 @@ static void markRoots() {
     markCompilerRoots();
 }
 
+/**
+ * グレースタックの中身がなくなるまで，参照を辿って，マーキングとグレースタックへの削除・追加を行う．
+ *
+ * @note 削除だけでなく，グレースタックへの追加も行われる．最終的にグレースタックが無くなるまで，ループが続く．
+ *       ref. 三色抽象化
+ */
+static void traceReferences() {
+    while (vm.grayCount > 0) {
+        Obj* object = vm.grayStack[--vm.grayCount]; // note: 後置デクリメント：先にデクリメントしてから，その新しい値をインデックスに使う．
+        blackenObject(object);
+    }
+}
+
 void collectGarbage() {
 #ifdef DEBUG_LOG_GC
     printf("-- gc begin\n");
 #endif
 
     markRoots();
+    traceReferences();
 
 #ifdef DEBUG_LOG_GC
     printf("-- gc end\n");
