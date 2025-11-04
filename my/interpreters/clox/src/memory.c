@@ -188,6 +188,35 @@ static void traceReferences() {
     }
 }
 
+/**
+ * 白オブジェクトのメモリ割り当てを解放し，再利用可能な状態にする．
+ * ref. 三色抽象化
+ */
+static void sweep() {
+    Obj* previous = NULL;
+    Obj* object = vm.objects;
+    while (object != NULL) {
+        if (object->isMarked) {
+            object->isMarked = false; // 次回のGCのために，マークをクリアする．
+            previous = object;
+            object = object->next;
+        } else {
+            Obj* unreached = object;
+
+            // オブジェクトチェーンの繋ぎ直し
+            object = object->next;
+            if (previous != NULL) {
+                previous->next = object;
+            } else {
+                // 先頭のオブジェクトを解放する場合
+                vm.objects = object;
+            }
+
+            freeObject(unreached);
+        }
+    }
+}
+
 void collectGarbage() {
 #ifdef DEBUG_LOG_GC
     printf("-- gc begin\n");
@@ -195,6 +224,7 @@ void collectGarbage() {
 
     markRoots();
     traceReferences();
+    sweep();
 
 #ifdef DEBUG_LOG_GC
     printf("-- gc end\n");
