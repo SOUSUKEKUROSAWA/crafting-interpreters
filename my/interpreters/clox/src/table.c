@@ -221,6 +221,22 @@ ObjString* tableFindString(
     }
 }
 
+/**
+ * 所与のハッシュ表の内，キーの文字列オブジェクトが白オブジェクト
+ * （マークされていないオブジェクト）であれば，表から削除して，
+ * 参照切れのポインタが残らないようにする．
+ *
+ * ref. 三色抽象化
+ */
+void tableRemoveWhite(Table* table) {
+    for (int i = 0; i < table->capacity; i++) {
+        Entry* entry = &table->entries[i];
+        if (entry->key != NULL && !entry->key->obj.isMarked) {
+            tableDelete(table, entry->key);
+        }
+    }
+}
+
 void markTable(Table* table) {
     for (int i = 0; i < table->capacity; i++) {
         Entry* entry = &table->entries[i];
