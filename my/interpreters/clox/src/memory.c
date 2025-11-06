@@ -9,11 +9,20 @@
 #include "debug.h"
 #endif
 
+#define GC_HEAP_GROW_FACTOR 2 // 次のGCの閾値を現在の使用しているヒープメモリサイズの何倍に設定するか．
+
 void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
+    vm.bytesAllocated += newSize - oldSize;
+
     if (newSize > oldSize) {
 #ifdef DEBUG_STRESS_GC
         collectGarbage();
 #endif
+
+        // ref. 自己調整ヒープ
+        if (vm.bytesAllocated > vm.nextGC) {
+            collectGarbage();
+        }
     }
 
     if (newSize == 0) {
@@ -41,12 +50,7 @@ void markObject(Obj* object) {
 
     object->isMarked = true;
 
-    /**
-     * NOTE: 三色抽象化
-     *       white：未処理のオブジェクト
-     *       gray：到達可能だが，参照する子オブジェクトの走査は未完了なオブジェクト
-     *       black：到達可能で，参照する子オブジェクトの操作も完了しているオブジェクト
-     */
+    // ref. 三色抽象化
     if (vm.grayCapacity < vm.grayCount + 1) {
         vm.grayCapacity = GROW_CAPACITY(vm.grayCapacity);
         /**
@@ -220,6 +224,7 @@ static void sweep() {
 void collectGarbage() {
 #ifdef DEBUG_LOG_GC
     printf("-- gc begin\n");
+    size_t before = vm.bytesAllocated;
 #endif
 
     markRoots();
@@ -227,8 +232,15 @@ void collectGarbage() {
     tableRemoveWhite(&vm.strings);
     sweep();
 
+    // GCがメモリを解放する時にも reallocate() は呼ばれるので，
+    // この時点で vm.bytesAllocated は解放後のバイト数に一致している．
+    vm.nextGC = vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
+
 #ifdef DEBUG_LOG_GC
     printf("-- gc end\n");
+    printf("   collocted %zu bytes (from %zu to %zu) next at %zu\n",
+        before - vm.bytesAllocated, before, vm.bytesAllocated, vm.nextGC
+    );
 #endif
 }
 
