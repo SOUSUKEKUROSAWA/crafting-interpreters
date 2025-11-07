@@ -53,7 +53,7 @@ static void runtimeError(const char* format, ...) {
 }
 
 static void defineNative(const char* name, NativeFn function) {
-    // GC が勝手にメモリを開放しないように一旦スタックにプッシュする．
+    // GC が勝手にメモリを開放しないように一旦VMのスタックにプッシュする．
     push(OBJ_VAL(copyString(name, (int)strlen(name))));
     push(OBJ_VAL(newNative(function)));
     tableSet(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
@@ -500,16 +500,15 @@ InterpretResult interpret(const char* source) {
     ObjFunction* function = compile(source);
     if (function == NULL) return INTERPRET_COMPILE_ERROR;
 
-    /**
-     * コンパイラが返した function をスタックスロットの 0 番目にプッシュする．
-     * ref. 「NOTE: VM が内部的に利用するローカル変数の予約」
-     *
-     * NOTE: GC がゴミだと勘違いしないように function も一旦プッシュしてからポップする．
-     */
+    // GC が勝手にメモリを開放しないように一旦VMのスタックにプッシュする．
     push(OBJ_VAL(function));
     ObjClosure* closure = newClosure(function);
     pop();
+
+    // コンパイラが返した function をスタックスロットの 0 番目にプッシュする．
+    // ref. 「NOTE: VM が内部的に利用するローカル変数の予約」
     push(OBJ_VAL(closure));
+
     call(closure, 0);
 
     return run();
