@@ -64,7 +64,11 @@ static ObjString* allocateString(
     string->length = length;
     string->chars = chars;
     string->hash = hash;
+
+    push(OBJ_VAL(string)); // GC が勝手にメモリを開放しないように一旦VMのスタックにプッシュする．
     tableSet(&vm.strings, string, NIL_VAL); // NOTE: 値はどうでもいいので nil を使う．
+    pop();
+
     return string;
 }
 
