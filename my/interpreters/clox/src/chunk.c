@@ -2,6 +2,7 @@
 
 #include "chunk.h"
 #include "memory.h"
+#include "vm.h"
 
 void initChunk(Chunk* chunk) {
     chunk->count = 0;
@@ -44,7 +45,11 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line) {
 }
 
 int addConstant(Chunk* chunk, Value value) {
+    // 引数 value はCのスタックにあり，GC からは隠されているので，
+    // GC が勝手にメモリを開放しないように一旦VMのスタックにプッシュする．
+    push(value);
     writeValueArray(&chunk->constants, value);
+    pop();
 
     // 追加した定数を後で参照できるように，定数を置いた位置のインデックスを返す．
     // NOTE: writeValueArray 内で count がインクリメントされているので，-1 を付ける必要がある
