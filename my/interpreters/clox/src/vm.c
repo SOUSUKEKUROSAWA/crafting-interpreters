@@ -200,8 +200,12 @@ static bool isFalsey(Value value) {
 }
 
 static void concatenate() {
-    ObjString* b = AS_STRING(pop());
-    ObjString* a = AS_STRING(pop());
+    /**
+     * @warning pop で取得すると，結合した文字列をヒープに割り当てるタイミングで
+     *          GCが動作した場合に，元の文字列が失われてしまうリスクがある．
+     */
+    ObjString* b = AS_STRING(peek(0));
+    ObjString* a = AS_STRING(peek(1));
 
     int length = a->length + b->length;
     char* chars = ALLOCATE(char, length + 1); // ターミネータ（\0）のために + 1
@@ -210,6 +214,9 @@ static void concatenate() {
     chars[length] = '\0';
 
     ObjString* result = takeString(chars, length);
+    // 連結した文字列ヒープに割り当ててから，元の値をスタックからポップする（GCの誤動作対策）．
+    pop();
+    pop();
     push(OBJ_VAL(result));
 }
 
