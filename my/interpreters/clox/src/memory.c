@@ -122,6 +122,10 @@ static void freeObject(Obj* object) {
 #endif
 
     switch (object->type) {
+        case OBJ_CLASS: {
+            FREE(ObjClass, object);
+            break;
+        }
         case OBJ_CLOSURE: {
             ObjClosure* closure = (ObjClosure*)object;
             // NOTE: ObjUpvalue そのものは所有しないが，上位値へのポインタを含む配列は所有するので，ここで解放する．
