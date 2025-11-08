@@ -73,6 +73,8 @@ typedef struct {
     int grayCount; // グレーオブジェクトの個数（動的配列内での利用済みの容量）．
     int grayCapacity; // グレーオブジェクトの動的配列の総容量
     Obj** grayStack; // グレーオブジェクトの動的配列．@note ダブルポインタ（Obj* の配列）
+
+    bool markValue; // 現時点でマーク済みと見なす bool 値．@note 高速化のため，true / false はGCが実行されるたびに入れ替わる．この markValue が false なら，各オブジェクトの mark が false の場合に，マーク済み（到達可能）であることを意味する．
 } VM;
 
 typedef enum {

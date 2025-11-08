@@ -40,7 +40,7 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
 
 void markObject(Obj* object) {
     if (object == NULL) return;
-    if (object->isMarked) return; // オブジェクト参照が閉路になっている場合の無限ループを防ぐ．
+    if (object->mark == vm.markValue) return; // オブジェクト参照が閉路になっている場合の無限ループを防ぐ．
 
 #ifdef DEBUG_LOG_GC
     printf("%p mark ", (void*)object);
@@ -48,7 +48,7 @@ void markObject(Obj* object) {
     printf("\n");
 #endif
 
-    object->isMarked = true;
+    object->mark = vm.markValue; // マーク済みと見なす．
 
     // ref. 三色抽象化
     if (vm.grayCapacity < vm.grayCount + 1) {
@@ -200,8 +200,8 @@ static void sweep() {
     Obj* previous = NULL;
     Obj* object = vm.objects;
     while (object != NULL) {
-        if (object->isMarked) {
-            object->isMarked = false; // 次回のGCのために，マークをクリアする．
+        if (object->mark == vm.markValue) {
+            // vm.markValue を利用することで，ここでマークのクリアを行う必要がない．
             previous = object;
             object = object->next;
         } else {
@@ -235,6 +235,10 @@ void collectGarbage() {
     // GCがメモリを解放する時にも reallocate() は呼ばれるので，
     // この時点で vm.bytesAllocated は解放後のバイト数に一致している．
     vm.nextGC = vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
+
+    // 次のGCのために，現時点でマーク済みと見なすブール値を切り替える．
+    // @note これにより，GC実行の度に全てのオブジェクトのマークをクリアして回るオーバーヘッドが無くなる．
+    vm.markValue = !vm.markValue;
 
 #ifdef DEBUG_LOG_GC
     printf("-- gc end\n");

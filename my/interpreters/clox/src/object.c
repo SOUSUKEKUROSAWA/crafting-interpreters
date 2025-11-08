@@ -16,7 +16,7 @@
 static Obj* allocateObject(size_t size, ObjType type) {
     Obj* object = (Obj*)reallocate(NULL, 0, size);
     object->type = type;
-    object->isMarked = false;
+    object->mark = !vm.markValue; // 到達不可能として初期化．
     object->next = vm.objects; // 末尾ではなく，先頭に順に繋いでいく．
     vm.objects = object;
 
