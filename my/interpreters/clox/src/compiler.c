@@ -618,6 +618,18 @@ static void call(bool canAssign) {
     emitBytes(OP_CALL, argCount);
 }
 
+static void dot(bool canAssign) {
+    consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
+    uint8_t name = identifierConstant(&parser.previous);
+
+    if (canAssign && match(TOKEN_EQUAL)) {
+        expression();
+        emitBytes(OP_SET_PROPERTY, name);
+    } else {
+        emitBytes(OP_GET_PROPERTY, name);
+    }
+}
+
 static void literal(bool canAssign) {
     switch (parser.previous.type) {
         case TOKEN_FALSE: emitByte(OP_FALSE); break;
@@ -684,7 +696,7 @@ static void string(bool canAssign) {
 }
 
 /**
- * @param canAssign true: 現在の優先度が代入が許されるほど低い．
+ * @param canAssign true: 現在の優先度が，代入が許されるほど低い．
  *        e.g. a * b = c + d; の場合は false．
  */
 static void namedVariable(Token name, bool canAssign) {
@@ -734,7 +746,8 @@ static void unary(bool canAssign) {
 
 /**
  * プラットパーサ全体を駆動する，解析ルール表
- * NOTE: 関数へのポインタを表に記入できるようにするため，それらの関数定義より後に定義している．
+ *
+ * @note 関数へのポインタを表に記入できるようにするため，それらの関数定義より後に定義している．
  */
 ParseRule rules[] = {
     [TOKEN_LEFT_PAREN]    = {grouping, call,   PREC_CALL},
@@ -742,7 +755,7 @@ ParseRule rules[] = {
     [TOKEN_LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE},
     [TOKEN_RIGHT_BRACE]   = {NULL,     NULL,   PREC_NONE},
     [TOKEN_COMMA]         = {NULL,     NULL,   PREC_NONE},
-    [TOKEN_DOT]           = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_DOT]           = {NULL,     dot,    PREC_CALL},
     [TOKEN_MINUS]         = {unary,    binary, PREC_TERM},
     [TOKEN_PLUS]          = {NULL,     binary, PREC_TERM},
     [TOKEN_SEMICOLON]     = {NULL,     NULL,   PREC_NONE},

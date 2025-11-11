@@ -21,6 +21,8 @@ typedef enum {
     OP_SET_GLOBAL, // グローバル変数を上書きする．@operand 上書きする変数名が格納されている定数表のインデックス
     OP_GET_UPVALUE, // @operand 取得する上位値が格納されているインデックス
     OP_SET_UPVALUE, // @operand 上書きする上位値が格納されているインデックス
+    OP_GET_PROPERTY, // インスタンスのプロパティ（フィールドやメソッドなど）を取得する．@operand 取得するプロパティ名が格納されている定数表のインデックス
+    OP_SET_PROPERTY, // インスタンスのフィールドを上書きする．@operand 上書きするフィールド名が格納されている定数表のインデックス @note GET命令との対比を重視して，PROPERTY という命令名だが，実際に上書きできるのはフィールドのみ．
     OP_EQUAL, // == （NOTE: OP_NOT と組み合わせることで != を表現可能）
     OP_GREATER, // > （NOTE: OP_NOT と組み合わせることで <= を表現可能）
     OP_LESS, // < （NOTE: OP_NOT と組み合わせることで >= を表現可能）
