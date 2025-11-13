@@ -26,7 +26,7 @@ static void resetStack() {
 /**
  * 可変長引数のエラーログ関数
  *
- * NOTE: printf と同じ書式でメッセージを受け取る
+ * @note printf と同じ書式でメッセージを受け取る
  */
 static void runtimeError(const char* format, ...) {
     va_list args;
@@ -373,6 +373,39 @@ static InterpretResult run() {
                 uint8_t slot = READ_BYTE();
                 *frame->closure->upvalues[slot]->location = peek(0);
                 // 代入は式なのでスタックの値はポップせずに残しておく．
+                break;
+            }
+            case OP_GET_PROPERTY: {
+                if (!IS_INSTANCE(peek(0))) {
+                    runtimeError("Only instances have properties.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjInstance* instance = AS_INSTANCE(peek(0));
+                ObjString* name = READ_STRING();
+
+                Value value;
+                if (tableGet(&instance->fields, name, &value)) {
+                    pop(); // Instance
+                    push(value);
+                    break;
+                }
+
+                runtimeError("Undefined property '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            case OP_SET_PROPERTY: {
+                if (!IS_INSTANCE(peek(1))) {
+                    runtimeError("Only instances have properties.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                ObjInstance* instance = AS_INSTANCE(peek(1));
+                // note: プロパティが存在しない場合は新規追加されるので，存在チェックは不要．
+                tableSet(&instance->fields, READ_STRING(), peek(0));
+                Value value = pop();
+                pop(); // Instance
+                push(value);
                 break;
             }
             case OP_EQUAL: {
