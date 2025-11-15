@@ -91,6 +91,12 @@ static void blackenObject(Obj* object) {
 
     switch (object->type) {
         // note: 変数宣言を含む文は，スコープの関係で {} で囲む必要がある．
+        case OBJ_CLASS: {
+            ObjClass* klass = (ObjClass*)object;
+            markObject((Obj*)klass->name);
+            markTable(&klass->methods);
+            break;
+        }
         case OBJ_CLOSURE: {
             ObjClosure* closure = (ObjClosure*)object;
             markObject((Obj*)closure->function);
@@ -129,6 +135,8 @@ static void freeObject(Obj* object) {
 
     switch (object->type) {
         case OBJ_CLASS: {
+            ObjClass* klass = (ObjClass*)object;
+            freeTable(&klass->methods);
             FREE(ObjClass, object);
             break;
         }

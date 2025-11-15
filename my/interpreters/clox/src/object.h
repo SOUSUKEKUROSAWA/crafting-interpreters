@@ -93,6 +93,7 @@ typedef struct {
 typedef struct {
     Obj obj; // オブジェクト型共通のデータ．ref. 構造体継承
     ObjString* name; // クラス名．実行時のスタックトレースなどで利用される．
+    Table methods; // クラスが所有するメソッド群のハッシュテーブル．
 } ObjClass;
 
 typedef struct {

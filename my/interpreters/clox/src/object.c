@@ -31,6 +31,7 @@ ObjClass* newClass(ObjString* name) {
     // @note class が予約語である C++ などでもコンパイルしやすくするために，あえて klass という変数名にしている．
     ObjClass* klass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
     klass->name = name;
+    initTable(&klass->methods);
     return klass;
 }
 
