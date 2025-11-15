@@ -95,6 +95,8 @@ Value pop() {
 /**
  * distance = 0 の場合，スタックの一番上から Value を取得する．
  * distance = 1 の場合は，その一つ下．
+ *
+ * @note 消費はしない．
  */
 static Value peek(int distance) {
     return vm.stackTop[-1 - distance];
@@ -195,6 +197,13 @@ static void closeUpvalues(Value* last) {
         upvalue->location = &upvalue->closed; // 参照先をスタックからヒープ（closed）に切り替える．
         vm.openUpvalues = upvalue->next; // open upvalue のリストから削除する（処理済みの upvalue をリストの追跡から外す）．
     }
+}
+
+static void defineMethod(ObjString* name) {
+    Value method = peek(0); // クロージャ
+    ObjClass* klass = AS_CLASS(peek(1));
+    tableSet(&klass->methods, name, method);
+    pop(); // クロージャをクリアする．
 }
 
 /**
@@ -532,6 +541,9 @@ static InterpretResult run() {
             }
             case OP_CLASS:
                 push(OBJ_VAL(newClass(READ_STRING())));
+                break;
+            case OP_METHOD:
+                defineMethod(READ_STRING());
                 break;
         }
     }

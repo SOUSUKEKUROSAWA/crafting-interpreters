@@ -41,6 +41,7 @@ typedef enum {
     OP_CLOSE_UPVALUE, // スタックトップにあるローカル変数をヒープに移す．
     OP_RETURN, // 現在の関数からリターンする．
     OP_CLASS, // 指定されたクラス名のクラスオブジェクトを作成する．@operand クラス名の定数表のインデックス．
+    OP_METHOD // ハッシュテーブルにメソッドを追加する．@operand メソッド名の定数表におけるインデックス．
 } OpCode;
 
 /**
