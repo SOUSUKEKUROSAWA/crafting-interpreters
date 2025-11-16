@@ -100,3 +100,14 @@ primary     -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" |
 - 例外処理
 - ループの break, continue
 - switch
+
+## Want to make
+
+普通の英文みたいに書けるプログラミング言語
+
+e.g.
+
+```txt
+i add 3 and 4, for 6 times, if x equal to 7.
+if i eat this cake, i pay 3 dollars.
+```
