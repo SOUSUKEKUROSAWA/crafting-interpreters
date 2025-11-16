@@ -82,17 +82,23 @@ typedef enum {
  * @note 関数ごとに生成される．
  */
 typedef struct Compiler {
-    struct Compiler* enclosing; // 自身を囲む Compiler へのポインタ．NOTE: これにより，ネストした Compiler の連結リストを構成する．WARNING: struct がないと循環参照になってしまう．
-    ObjFunction* function; // コンパイラの出力先となる関数オブジェクトへのポインタ．NOTE: 単純化のため，トップレベルコードも暗黙的な関数の中にラップされているものとして扱う．
+    struct Compiler* enclosing; // 自身を囲む Compiler へのポインタ．@note これにより，ネストした Compiler の連結リストを構成する．@warning struct がないと循環参照になってしまう．
+    ObjFunction* function; // コンパイラの出力先となる関数オブジェクトへのポインタ．@note 単純化のため，トップレベルコードも暗黙的な関数の中にラップされているものとして扱う．
     FunctionType type; // 対象のコードがトップレベルなのか，関数本文なのかを判別するためのフラグ．
-    Local locals[UINT8_COUNT]; // コンパイル時点でスコープに入る全てのローカル変数を格納する配列．NOTE: オペランドが 1 バイトまでと決まっているので，要素数にも固定の上限（UINT8_COUNT）が存在する．
+    Local locals[UINT8_COUNT]; // コンパイル時点でスコープに入る全てのローカル変数を格納する配列．@note オペランドが 1 バイトまでと決まっているので，要素数にも固定の上限（UINT8_COUNT）が存在する．
     int localCount; // スコープ内のローカル変数の個数
-    Upvalue upvalues[UINT8_COUNT]; // コンパイル時点でスコープに入る全ての上位値を格納する配列．NOTE: オペランドが 1 バイトまでと決まっているので，要素数にも固定の上限（UINT8_COUNT）が存在する．
+    Upvalue upvalues[UINT8_COUNT]; // コンパイル時点でスコープに入る全ての上位値を格納する配列．@note オペランドが 1 バイトまでと決まっているので，要素数にも固定の上限（UINT8_COUNT）が存在する．
     int scopeDepth; // 今コンパイルしているコードを囲んでいるブロックの数（e.g. 0 = グローバルスコープ，1 = トップレベルブロック）
 } Compiler;
 
+typedef struct ClassCompiler {
+    struct ClassCompiler* enclosing; // 外側を囲むクラスの ClassCompiler へのポインタ．@note クラス宣言がネストされる場合などに，ネストした ClassCompiler の連結リストを構成する．@warning struct がないと循環参照になってしまう．
+} ClassCompiler;
+
+
 static Parser parser;
 Compiler* current = NULL;
+ClassCompiler* currentClass = NULL; // 現在コンパイルされている中で最も内側のクラスを表現する構造体へのポインタ．@note どのクラスの内側でもない場合は NULL．
 
 static Chunk* currentChunk() {
     return &current->function->chunk;
@@ -747,6 +753,11 @@ static void variable(bool canAssign) {
  * this という字句の変数としてスコープを解決する．
  */
 static void this_(bool canAssign) {
+    if (currentClass == NULL) {
+        error("Can't use 'this' outside of a class.");
+        return;
+    }
+
     variable(false); // この時点で parser.previous は this になっている．
 }
 
@@ -912,6 +923,10 @@ static void classDeclaration() {
     emitBytes(OP_CLASS, nameConstant);
     defineVariable(nameConstant); // クラス本文よりも前で定義済みにすることで，自己参照（self）などが実現可能になる．
 
+    ClassCompiler classCompiler;
+    classCompiler.enclosing = currentClass;
+    currentClass = &classCompiler;
+
     namedVariable(className, false); // クラスがスタックにロードされる．
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
     while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
@@ -919,6 +934,8 @@ static void classDeclaration() {
     }
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
     emitByte(OP_POP);
+
+    currentClass = currentClass->enclosing; // 外側の ClassCompiler を復活させる．
 }
 
 static void funDeclaration() {
