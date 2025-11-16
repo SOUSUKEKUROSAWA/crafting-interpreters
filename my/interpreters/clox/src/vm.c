@@ -197,6 +197,24 @@ static bool invoke(ObjString* name, int argCount) {
     }
 
     ObjInstance* instance = AS_INSTANCE(receiver);
+
+    Value value;
+    if (tableGet(&instance->fields, name, &value)) {
+        /**
+         * 関数が格納されているフィールドを呼び出す場合
+         *
+         * e.g.
+         *  class Hoge {
+         *      fun f() { fuga; }
+         *      this.field = f;
+         *  }
+         *  var hoge = Hoge();
+         *  hoge.field();
+         */
+        vm.stackTop[-argCount - 1] = value;
+        return callValue(value, argCount);
+    }
+
     return invokeFromClass(instance->klass, name, argCount);
 }
 
