@@ -898,7 +898,7 @@ static void classDeclaration() {
 
     namedVariable(className, false); // クラスがスタックにロードされる．
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
-    while (!check(TOKEN_RIGHT_BRACE && !check(TOKEN_EOF))) {
+    while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
         method();
     }
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
