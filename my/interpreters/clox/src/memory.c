@@ -210,6 +210,9 @@ static void markRoots() {
 
     // コンパイラが直接アクセスする値
     markCompilerRoots();
+
+    // 消えたら困るので，ルート扱いにして常にマークされた状態にする．
+    markObject((Obj*)vm.initString);
 }
 
 /**

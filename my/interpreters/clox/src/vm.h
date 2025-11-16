@@ -51,6 +51,8 @@ typedef struct {
      */
     Table strings; // インターン化済みの文字列の一覧（ハッシュ表）
 
+    ObjString* initString; // 初期化 init() のルックアップのための文字列．@note init() のルックアップ処理はインスタンス構築時に必ず呼び出されるので，高速化のためにここで定義して再利用する．
+
     ObjUpvalue* openUpvalues; // open upvalue の連結リストの先頭へのポインタ．ref. @note open upvalue:
 
     /**
