@@ -5,8 +5,10 @@
 #include "value.h"
 
 /**
- * NOTE: バイトコード = 個々の命令が 1 バイトの演算コード（operation code, opcode）
- * NOTE: operand = opcode の直後に置かれ，opcode ごとに異なる意味を持つパラメータ
+ * Operation code バイトコード
+ *
+ * @note バイトコード = 個々の命令が 1 バイトの演算コード
+ * @note operand = opcode の直後に置かれ，opcode ごとに異なる意味を持つパラメータ
  */
 typedef enum {
     OP_CONSTANT, // 特定の数をスタックにプッシュする．@operand プッシュする値
@@ -23,9 +25,9 @@ typedef enum {
     OP_SET_UPVALUE, // @operand 上書きする上位値が格納されているインデックス
     OP_GET_PROPERTY, // インスタンスのプロパティ（フィールドやメソッドなど）を取得する．@operand 取得するプロパティ名が格納されている定数表のインデックス
     OP_SET_PROPERTY, // インスタンスのフィールドを上書きする．@operand 上書きするフィールド名が格納されている定数表のインデックス @note GET命令との対比を重視して，PROPERTY という命令名だが，実際に上書きできるのはフィールドのみ．
-    OP_EQUAL, // == （NOTE: OP_NOT と組み合わせることで != を表現可能）
-    OP_GREATER, // > （NOTE: OP_NOT と組み合わせることで <= を表現可能）
-    OP_LESS, // < （NOTE: OP_NOT と組み合わせることで >= を表現可能）
+    OP_EQUAL, // == @note OP_NOT と組み合わせることで != を表現可能）
+    OP_GREATER, // > @note OP_NOT と組み合わせることで <= を表現可能）
+    OP_LESS, // < @note OP_NOT と組み合わせることで >= を表現可能）
     OP_ADD, // 加算
     OP_SUBSTRACT, // 減算
     OP_MULTIPLY, // 乗算
@@ -46,8 +48,8 @@ typedef enum {
 } OpCode;
 
 /**
- * NOTE: chunk = バイトコードのシーケンス
- * NOTE: 動的配列にバイトコードを収めることで，
+ * @note chunk = バイトコードのシーケンス
+ * @note 動的配列にバイトコードを収めることで，
  * キャッシュ効率の高い密なストレージに命令を収められて，
  * 高速に実行できる．
  */
@@ -55,9 +57,8 @@ typedef struct {
     int count; // 要素数（利用済みの容量）
     int capacity; // 総容量
 
-    // NOTE: 実行時にサイズが変化するので，動的配列として実装し，ポインタを保持する．
-    uint8_t* code; // バイトコード（動的配列）の先頭へのポインタ
-    int* lines; // 各バイトコードのソースコード上での行情報（動的配列）の先頭へのポインタ
+    uint8_t* code; // バイトコード（動的配列）の先頭へのポインタ．@note 実行時にサイズが変化するので，動的配列として実装し，ポインタを保持する．
+    int* lines; // 各バイトコードのソースコード上での行情報（動的配列）の先頭へのポインタ．@note 実行時にサイズが変化するので，動的配列として実装し，ポインタを保持する．
 
     ValueArray constants; // 定数プール（値の配列）
 } Chunk;
