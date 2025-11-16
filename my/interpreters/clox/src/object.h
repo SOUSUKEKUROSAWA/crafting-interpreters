@@ -8,6 +8,7 @@
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
+#define IS_BOUND_METHOD(value) isObjType(value, OBJ_BOUND_METHOD)
 #define IS_CLASS(value) isObjType(value, OBJ_CLASS)
 #define IS_CLOSURE(value) isObjType(value, OBJ_CLOSURE)
 #define IS_FUNCTION(value) isObjType(value, OBJ_FUNCTION)
@@ -15,6 +16,7 @@
 #define IS_NATIVE(value) isObjType(value, OBJ_NATIVE)
 #define IS_STRING(value) isObjType(value, OBJ_STRING)
 
+#define AS_BOUND_METHOD(value) ((ObjBoundMethod*)AS_OBJ(value))
 #define AS_CLASS(value) ((ObjClass*)AS_OBJ(value))
 #define AS_CLOSURE(value) ((ObjClosure*)AS_OBJ(value))
 #define AS_FUNCTION(value) ((ObjFunction*)AS_OBJ(value))
@@ -24,11 +26,12 @@
 #define AS_CSTRING(value) (((ObjString*)AS_OBJ(value))->chars)
 
 typedef enum {
+    OBJ_BOUND_METHOD, // インスタンスメソッド
     OBJ_CLASS,
     OBJ_CLOSURE,
     OBJ_FUNCTION,
     OBJ_INSTANCE,
-    OBJ_NATIVE,
+    OBJ_NATIVE, // 言語組み込み関数
     OBJ_STRING,
     OBJ_UPVALUE,
 } ObjType;
@@ -102,6 +105,20 @@ typedef struct {
     Table fields; // インスタンス固有のフィールドを保持するハッシュテーブル．@note Lox ユーザーは実行時にインスタンスにフィールドを追加できるので，拡張可能である必要があり，なおかつフィールドの検索を高速で行いたいのでハッシュテーブルを用いる．
 } ObjInstance;
 
+/**
+ * 束縛メソッド
+ * 呼び出し元のインスタンスの状態をメソッドに紐づけるための構造体．
+ *
+ * @note Lox では，メソッドへのアクセスとコールが同時に行われない可能性があるため，
+ *       あとで呼び出されるまでアクセス元のインスタンスを覚えておく必要がある．
+ */
+typedef struct {
+    Obj obj; // オブジェクト型共通のデータ．ref. 構造体継承
+    Value receiver; // アクセス元のインスタンス．@note ObjInstance ではない，汎用的な関数も渡せるように Value で定義している．
+    ObjClosure* method; // 取り扱うメソッド（クロージャ）へのポインタ．
+} ObjBoundMethod;
+
+ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method);
 ObjClass* newClass(ObjString* name);
 ObjClosure* newClosure(ObjFunction* function);
 ObjFunction* newFunction();

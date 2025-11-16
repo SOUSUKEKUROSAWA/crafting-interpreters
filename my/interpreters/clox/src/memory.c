@@ -91,6 +91,12 @@ static void blackenObject(Obj* object) {
 
     switch (object->type) {
         // note: 変数宣言を含む文は，スコープの関係で {} で囲む必要がある．
+        case OBJ_BOUND_METHOD: {
+            ObjBoundMethod* bound = (ObjBoundMethod*)object;
+            markValue(bound->receiver);
+            markObject((Obj*)bound->method); // @note (ObjInstance*)receiver->(ObjClass*)klass->(Table)methods と辿ることも可能だが，それに依存すべきではないので，ここで明示的にマークしている．
+            break;
+        }
         case OBJ_CLASS: {
             ObjClass* klass = (ObjClass*)object;
             markObject((Obj*)klass->name);
@@ -134,6 +140,9 @@ static void freeObject(Obj* object) {
 #endif
 
     switch (object->type) {
+        case OBJ_BOUND_METHOD:
+            FREE(ObjBoundMethod, object);
+            break;
         case OBJ_CLASS: {
             ObjClass* klass = (ObjClass*)object;
             freeTable(&klass->methods);
