@@ -17,8 +17,20 @@ static int constantInstruction(const char* name, Chunk* chunk, int offset) {
     printValue(chunk->constants.values[constant]);
     printf("'\n");
 
-    // NOTE: opcode (1 byte) + operand (1 byte) = 2 byte
+    // note: opcode (1 byte) + operand (1 byte) = 2 byte
     return offset + 2;
+}
+
+static int invokeInstruction(const char* name, Chunk* chunk, int offset) {
+    uint8_t constant = chunk->code[offset + 1]; // メソッド名
+    uint8_t argCount = chunk->code[offset + 2];
+
+    printf("%-16s (%d args) %4d '", name, argCount, constant);
+    printValue(chunk->constants.values[constant]);
+    printf("'\n");
+
+    // note: opcode (1 byte) + operand (2 byte) = 3 byte
+    return offset + 3;
 }
 
 // NOTE: static -> private 関数と同義
@@ -143,6 +155,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
             return jumpInstruction("OP_LOOP", -1, chunk, offset);
         case OP_CALL:
             return byteInstruction("OP_CALL", chunk, offset);
+        case OP_INVOKE:
+            return invokeInstruction("OP_INVOKE", chunk, offset);
         case OP_CLOSURE: {
             offset++;
             uint8_t constant = chunk->code[offset++];

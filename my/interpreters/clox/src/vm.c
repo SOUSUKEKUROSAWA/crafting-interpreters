@@ -174,6 +174,33 @@ static bool callValue(Value callee, int argCount) {
 }
 
 /**
+ * 所与の name に一致するメソッドを呼び出す．
+ */
+static bool invokeFromClass(ObjClass* klass, ObjString* name, int argCount) {
+    Value method;
+    if (!tableGet(&klass->methods, name, &method)) {
+        runtimeError("Undefined property '%s'.", name->chars);
+        return false;
+    }
+    return call(AS_CLOSURE(method), argCount);
+}
+
+/**
+ * @return true: 呼び出し成功．false: 呼び出し失敗．
+ */
+static bool invoke(ObjString* name, int argCount) {
+    Value receiver = peek(argCount);
+
+    if (!IS_INSTANCE(receiver)) {
+        runtimeError("Only instances have methods.");
+        return false;
+    }
+
+    ObjInstance* instance = AS_INSTANCE(receiver);
+    return invokeFromClass(instance->klass, name, argCount);
+}
+
+/**
  * @return true: 所与のメソッドが存在し，スタックトップのレシーバ（メソッドが所属するインスタンス）を束縛メソッドで置換する．
  *         false: 所与のメソッドが存在しなかった．
  */
@@ -532,11 +559,23 @@ static InterpretResult run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 /**
-                 * 現在のフレームを呼び出した関数のフレームに更新
+                 * 現在のフレームを，呼び出した関数のフレームに更新
                  *
-                 * NOTE: 関数呼び出しの度に現在のフレームを更新していくことで，
+                 * note: 関数呼び出しの度に現在のフレームを更新していくことで，
                  *       ip も更新され，実質的に命令のジャンプが行える．
                  */
+                frame = &vm.frames[vm.frameCount - 1];
+                break;
+            }
+            case OP_INVOKE: {
+                ObjString* method = READ_STRING();
+                int argCount = READ_BYTE();
+
+                if (!invoke(method, argCount)) {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                // 呼び出した関数のフレームにジャンプ．
                 frame = &vm.frames[vm.frameCount - 1];
                 break;
             }
