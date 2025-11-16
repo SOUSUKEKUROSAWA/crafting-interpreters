@@ -151,6 +151,23 @@ static bool callValue(Value callee, int argCount) {
     return false;
 }
 
+/**
+ * @return true: 所与のメソッドが存在し，スタックトップのレシーバ（メソッドが所属するインスタンス）を束縛メソッドで置換する．
+ *         false: 所与のメソッドが存在しなかった．
+ */
+static bool bindMethod(ObjClass* klass, ObjString* name) {
+    Value method;
+    if (!tableGet(&klass->methods, name, &method)) {
+        runtimeError("Undefined property '%s'.", name->chars);
+        return false;
+    }
+
+    ObjBoundMethod* bound = newBoundMethod(peek(0), AS_CLOSURE(method));
+    pop(); // receiver (=Instance)
+    push(OBJ_VAL(bound));
+    return true;
+}
+
 static ObjUpvalue* captureUpvalue(Value* local) {
     ObjUpvalue* prevUpvalue = NULL;
     ObjUpvalue* upvalue = vm.openUpvalues;
@@ -400,8 +417,12 @@ static InterpretResult run() {
                     break;
                 }
 
-                runtimeError("Undefined property '%s'.", name->chars);
-                return INTERPRET_RUNTIME_ERROR;
+                // フィールドでなければ，メソッドを探索．
+                // warning: フィールドとメソッドで命名が重複していた場合，フィールドが優先される．
+                if (!bindMethod(instance->klass, name)) {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                break;
             }
             case OP_SET_PROPERTY: {
                 if (!IS_INSTANCE(peek(1))) {
