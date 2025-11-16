@@ -75,6 +75,7 @@ typedef struct {
 typedef enum {
     TYPE_FUNCTION, // 関数本文
     TYPE_METHOD, // メソッド本文
+    TYPE_INITIALIZER, // 初期化 init() 本文
     TYPE_SCRIPT, // トップレベルコード
 } FunctionType;
 
@@ -223,7 +224,12 @@ static void emitLoop(int loopStart) {
  * 戻り値なしの return，もしくは暗黙の return．
  */
 static void emitReturn() {
-    emitByte(OP_NIL); // NOTE: 暗黙の戻り値
+    if (current->type == TYPE_INITIALIZER) {
+        emitBytes(OP_GET_LOCAL, 0); // スロット 0 （= インスタンス自身 = this）をスタックにプッシュする．
+    } else {
+        emitByte(OP_NIL); // NOTE: 暗黙の戻り値
+    }
+
     emitByte(OP_RETURN);
 }
 
@@ -910,6 +916,9 @@ static void method() {
     uint8_t constant = identifierConstant(&parser.previous);
 
     FunctionType type = TYPE_METHOD;
+    if (parser.previous.length == 4 && memcmp(parser.previous.start, "init", 4) == 0) {
+        type = TYPE_INITIALIZER;
+    }
     function(type);
 
     emitBytes(OP_METHOD, constant);
