@@ -15,8 +15,8 @@ while getopts "jc" opt; do
     \?)
       echo "Invalid option: -$OPTARG" >&2
       echo "Usage: $0 [-j|-c]"
-      echo "  -j: Java mode"
-      echo "  -c: C mode"
+      echo "  -j: Run jlox"
+      echo "  -c: Run clox"
       exit 1
       ;;
   esac
@@ -29,8 +29,8 @@ elif [ "$LANGUAGE" = "c" ]; then
 else
   echo "Error: 起動モードを選択してください．" >&2
   echo "Usage: $0 [-j|-c]"
-  echo "  -j: Java mode"
-  echo "  -c: C mode"
+  echo "  -j: Run jlox"
+  echo "  -c: Run clox"
   exit 1
 fi
 
