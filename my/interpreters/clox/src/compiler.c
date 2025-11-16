@@ -74,6 +74,7 @@ typedef struct {
 
 typedef enum {
     TYPE_FUNCTION, // 関数本文
+    TYPE_METHOD, // メソッド本文
     TYPE_SCRIPT, // トップレベルコード
 } FunctionType;
 
@@ -279,7 +280,7 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
 
     if (type != TYPE_SCRIPT) {
         /**
-         * WARNING: 関数オブジェクトのライフタイムは，コンパイラよりも長いため，
+         * warning: 関数オブジェクトのライフタイムは，コンパイラよりも長いため，
          *          字句へのポインタを保存するだけだと，いざ実行する時に
          *          そのポインタのメモリが解放されてしまっているリスクがある．
          *
@@ -289,16 +290,24 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
     }
 
     /**
-     * NOTE: VM が内部的に利用するローカル変数の予約
+     * note: VM が内部的に利用するローカル変数の予約
      *       コンパイラが生成する関数オブジェクトが格納される．
      *       0 番目を空の名前で予約する．
      *       名前が空なので，これを参照する識別子は書けない．
+     *
+     * note: ただし，メソッドの場合は this という名前で予約する．
+     *       格納された関数オブジェクト（メソッド）をレシーバ（this に該当するインスタンス）に置き換えるのは vm 側の仕事．
      */
     Local* local = &current->locals[current->localCount++];
     local->depth = 0;
     local->isCaptured = false;
-    local->name.start = "";
-    local->name.length = 0;
+    if (type != TYPE_FUNCTION) {
+        local->name.start = "this";
+        local->name.length = 4;
+    } else {
+        local->name.start = "";
+        local->name.length = 0;
+    }
 }
 
 static ObjFunction* endCompiler() {
@@ -734,6 +743,13 @@ static void variable(bool canAssign) {
     namedVariable(parser.previous, canAssign);
 }
 
+/**
+ * this という字句の変数としてスコープを解決する．
+ */
+static void this_(bool canAssign) {
+    variable(false); // この時点で parser.previous は this になっている．
+}
+
 static void unary(bool canAssign) {
     TokenType operatorType = parser.previous.type;
 
@@ -786,7 +802,7 @@ ParseRule rules[] = {
     [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE},
     [TOKEN_RETURN]        = {NULL,     NULL,   PREC_NONE},
     [TOKEN_SUPER]         = {NULL,     NULL,   PREC_NONE},
-    [TOKEN_THIS]          = {NULL,     NULL,   PREC_NONE},
+    [TOKEN_THIS]          = {this_,    NULL,   PREC_NONE},
     [TOKEN_TRUE]          = {literal,  NULL,   PREC_NONE},
     [TOKEN_VAR]           = {NULL,     NULL,   PREC_NONE},
     [TOKEN_WHILE]         = {NULL,     NULL,   PREC_NONE},
@@ -882,7 +898,7 @@ static void method() {
     consume(TOKEN_IDENTIFIER, "Expect method name.");
     uint8_t constant = identifierConstant(&parser.previous);
 
-    FunctionType type = TYPE_FUNCTION;
+    FunctionType type = TYPE_METHOD;
     function(type);
 
     emitBytes(OP_METHOD, constant);
