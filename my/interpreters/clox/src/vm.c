@@ -283,6 +283,9 @@ static void closeUpvalues(Value* last) {
     }
 }
 
+/**
+ * 所与の名前のメソッドをハッシュテーブルに追加／上書きする
+ */
 static void defineMethod(ObjString* name) {
     Value method = peek(0); // クロージャ
     ObjClass* klass = AS_CLASS(peek(1));
@@ -642,6 +645,20 @@ static InterpretResult run() {
             case OP_CLASS:
                 push(OBJ_VAL(newClass(READ_STRING())));
                 break;
+            case OP_INHERIT: {
+                Value superclass = peek(1);
+                ObjClass* subclass = AS_CLASS(peek(0));
+                /**
+                 * note: メソッドのオーバーライドの実装
+                 *  この命令はどのメソッド宣言（OP_METHOD）よりも前に実行されるので，
+                 *  この時点で subclass->methods は空．
+                 *  ここで，スーパークラスのメソッドが全て追加された後に，
+                 *  OP_METHOD でサブクラスのメソッドが上書き（オーバーライド）する．
+                 */
+                tableAddAll(&AS_CLASS(superclass)->methods, &subclass->methods);
+                pop(); // Subclass
+                break;
+            }
             case OP_METHOD:
                 defineMethod(READ_STRING());
                 break;
