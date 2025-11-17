@@ -387,7 +387,7 @@ static uint8_t identifierConstant(Token* name) {
     );
 }
 
-static bool identifierEqual(Token* a, Token* b) {
+static bool identifiersEqual(Token* a, Token* b) {
     if (a->length != b->length) return false; // まず簡易比較
     return memcmp(a->start, b->start, a->length) == 0;
 }
@@ -402,7 +402,7 @@ static bool identifierEqual(Token* a, Token* b) {
 static int resolveLocal(Compiler* compiler, Token* name) {
     for (int i = compiler->localCount - 1; i >= 0; i--) {
         Local* local = &compiler->locals[i];
-        if (identifierEqual(name, &local->name)) {
+        if (identifiersEqual(name, &local->name)) {
             /**
              * 以下のようなエッジケースをエラーにするための分岐．
              *
@@ -502,7 +502,7 @@ static void declareVariable() {
             break;
         }
 
-        if (identifierEqual(name, &local->name)) {
+        if (identifiersEqual(name, &local->name)) {
             error("Already a variable with this name in this scope.");
         }
     }
@@ -946,7 +946,7 @@ static void classDeclaration() {
         consume(TOKEN_IDENTIFIER, "Expect superclass name.");
         variable(false); // スーパークラスをスタックにプッシュする．
 
-        if (identifierEqual(&className, &parser.previous)) {
+        if (identifiersEqual(&className, &parser.previous)) {
             error("A class can't inherit from itself.");
         }
 
