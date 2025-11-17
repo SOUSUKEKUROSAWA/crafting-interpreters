@@ -106,11 +106,6 @@ static uint32_t hashString(const char* key, int length) {
     return hash;
 }
 
-/**
- * 渡された文字列をそのまま ObjString に割り当てる（所有する）．
- *
- * @note すでにヒープに割り当て済みの文字列に対して使う．
- */
 ObjString* takeString(char* chars, int length) {
     uint32_t hash = hashString(chars, length);
 
@@ -124,11 +119,6 @@ ObjString* takeString(char* chars, int length) {
     return allocateString(chars, length, hash);
 }
 
-/**
- * 渡された文字列をヒープ上にコピーして ObjString に割り当てる（所有しない）．
- *
- * @note 渡される文字列がソース文字列の一部のような場合に使う．
- */
 ObjString* copyString(const char* chars, int length) {
     uint32_t hash = hashString(chars, length);
 

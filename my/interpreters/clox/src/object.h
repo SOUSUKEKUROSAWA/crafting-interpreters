@@ -124,8 +124,21 @@ ObjClosure* newClosure(ObjFunction* function);
 ObjFunction* newFunction();
 ObjInstance* newInstance(ObjClass* klass);
 ObjNative* newNative(NativeFn function);
+
+/**
+ * 渡された文字列をそのまま ObjString に割り当てる（所有する）．
+ *
+ * @note すでにヒープに割り当て済みの文字列に対して使う．
+ */
 ObjString* takeString(char* chars, int length);
+
+/**
+ * 渡された文字列をヒープ上にコピーして ObjString に割り当てる（所有しない）．
+ *
+ * @note 渡される文字列がソース文字列の一部のような場合に使う．
+ */
 ObjString* copyString(const char* chars, int length);
+
 ObjUpvalue* newUpvalue(Value* slot);
 
 void printObject(Value value);

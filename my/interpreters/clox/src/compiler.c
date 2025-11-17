@@ -1213,9 +1213,6 @@ static void statement() {
     }
 }
 
-/**
- * @return 正常時は ObjFunction でラップしたチャンクを，エラー時には NULL を返す．
- */
 ObjFunction* compile(const char* source) {
     initScanner(source);
     Compiler compiler;

@@ -3,7 +3,9 @@
 
 #include "chunk.h"
 
-// チャンク全体に含まれる全ての命令を逆アセンブルする
+/**
+ * チャンク全体に含まれる全ての命令を逆アセンブルする．
+ */
 void disassembleChunk(Chunk* chunk, const char* name);
 
 /**
