@@ -941,6 +941,19 @@ static void classDeclaration() {
     classCompiler.enclosing = currentClass;
     currentClass = &classCompiler;
 
+    // 継承
+    if (match(TOKEN_LESS)) {
+        consume(TOKEN_IDENTIFIER, "Expect superclass name.");
+        variable(false); // スーパークラスをスタックにプッシュする．
+
+        if (identifierEqual(&className, &parser.previous)) {
+            error("A class can't inherit from itself.");
+        }
+
+        namedVariable(className, false); // サブクラスをスタックにプッシュする．
+        emitByte(OP_INHERIT);
+    }
+
     namedVariable(className, false); // クラスがスタックにロードされる．
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
     while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
