@@ -94,6 +94,7 @@ typedef struct Compiler {
 
 typedef struct ClassCompiler {
     struct ClassCompiler* enclosing; // 外側を囲むクラスの ClassCompiler へのポインタ．@note クラス宣言がネストされる場合などに，ネストした ClassCompiler の連結リストを構成する．@warning struct がないと循環参照になってしまう．
+    bool hasSuperclass;
 } ClassCompiler;
 
 
@@ -761,6 +762,16 @@ static void variable(bool canAssign) {
 }
 
 /**
+ * 所与の文字列からトークンを生成する．
+ */
+static Token syntheticToken(const char* text) {
+    Token token;
+    token.start = text;
+    token.length = (int)strlen(text);
+    return token;
+}
+
+/**
  * this という字句の変数としてスコープを解決する．
  */
 static void this_(bool canAssign) {
@@ -939,6 +950,7 @@ static void classDeclaration() {
 
     ClassCompiler classCompiler;
     classCompiler.enclosing = currentClass;
+    classCompiler.hasSuperclass = true;
     currentClass = &classCompiler;
 
     // 継承
@@ -952,7 +964,12 @@ static void classDeclaration() {
 
         namedVariable(className, false); // サブクラスをスタックにプッシュする．
         emitByte(OP_INHERIT);
+        classCompiler.hasSuperclass = true;
     }
+    // この時点でスタックトップにスーパークラスが残っている状態（サブクラスは OP_INHERIT でポップされる）．
+    beginScope();
+    addLocal(syntheticToken("super"));
+    defineVariable(0); // スーパークラスを隠し変数 super に束縛
 
     namedVariable(className, false); // クラスがスタックにロードされる．
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
@@ -961,6 +978,10 @@ static void classDeclaration() {
     }
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
     emitByte(OP_POP);
+
+    if (classCompiler.hasSuperclass) {
+        endScope();
+    }
 
     currentClass = currentClass->enclosing; // 外側の ClassCompiler を復活させる．
 }
