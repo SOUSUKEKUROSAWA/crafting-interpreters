@@ -106,6 +106,9 @@ static Value peek(int distance) {
     return vm.stackTop[-1 - distance];
 }
 
+/**
+ * 呼び出し先のクロージャのコールフレームを用意
+ */
 static bool call(ObjClosure* closure, int argCount) {
     if (argCount != closure->function->arity) {
         runtimeError("Expected %d arguments but got %d.", closure->function->arity, argCount);
@@ -601,6 +604,19 @@ static InterpretResult run() {
                 int argCount = READ_BYTE();
 
                 if (!invoke(method, argCount)) {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                // 呼び出した関数のフレームにジャンプ．
+                frame = &vm.frames[vm.frameCount - 1];
+                break;
+            }
+            case OP_SUPER_INVOKE: {
+                ObjString* method = READ_STRING();
+                int argCount = READ_BYTE();
+                ObjClass* superclass = AS_CLASS(pop());
+
+                if (!invokeFromClass(superclass, method, argCount)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
 

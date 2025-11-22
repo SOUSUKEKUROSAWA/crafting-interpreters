@@ -559,6 +559,8 @@ static void defineVariable(uint8_t global) {
 }
 
 /**
+ * 関数・メソッドの引数リストのコンパイル
+ *
  * @return 引数の個数
  */
 static uint8_t argumentList() {
@@ -783,8 +785,16 @@ static void super_(bool canAssign) {
     uint8_t name = identifierConstant(&parser.previous);
 
     namedVariable(syntheticToken("this"), false); // 現在のレシーバをスタックにプッシュする．
-    namedVariable(syntheticToken("super"), false); // 現在のクラスのスーパークラスをスタックにプッシュする．
-    emitBytes(OP_GET_SUPER, name);
+    if (match(TOKEN_LEFT_PAREN)) {
+        // メソッドアクセス後，即コールする場合の最適化パス．
+        uint8_t argCount = argumentList();
+        namedVariable(syntheticToken("super"), false); // 現在のクラスのスーパークラスをスタックにプッシュする．
+        emitBytes(OP_SUPER_INVOKE, name);
+        emitByte(argCount);
+    } else {
+        namedVariable(syntheticToken("super"), false); // 現在のクラスのスーパークラスをスタックにプッシュする．
+        emitBytes(OP_GET_SUPER, name);
+    }
 }
 
 /**
