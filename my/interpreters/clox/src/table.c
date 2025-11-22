@@ -38,7 +38,7 @@ static Entry* findEntry(
      *
      * WARNING: 総容量は小さすぎると，衝突のリスクが高まるので，占有率を調整して，適切に拡張する必要がある．
      */
-    uint32_t index = key->hash % capacity;
+    uint32_t index = key->hash & (capacity - 1); // note: このハッシュ表のサイズは必ず2のN乗になるので，key->hash % capacity と結果は同じだが，高速化のためにビット演算で実装している．
     Entry* tombstone = NULL; // 最初に見つけた墓標の位置（ポインタ）
 
     /**
@@ -70,7 +70,7 @@ static Entry* findEntry(
          * 異なるキーが存在していた場合（＝衝突を検知した場合）は隣を順に探索していく．
          * 総容量より大きかったら先頭に戻る．
          */
-        index = (index + 1) % capacity;
+        index = (index + 1) & (capacity - 1); // note: このハッシュ表のサイズは必ず2のN乗になるので，(index + 1) % capacity と結果は同じだが，高速化のためにビット演算で実装している．
     }
 }
 
@@ -174,7 +174,7 @@ ObjString* tableFindString(
 ) {
     if (table->count == 0) return NULL;
 
-    uint32_t index = hash % table->capacity;
+    uint32_t index = hash & (table->capacity - 1); // note: このハッシュ表のサイズは必ず2のN乗になるので，hash % table->capacity と結果は同じだが，高速化のためにビット演算で実装している．
 
     for (;;) {
         Entry* entry = &table->entries[index];
@@ -195,7 +195,7 @@ ObjString* tableFindString(
         }
 
         // 線形探針
-        index = (index + 1) % table->capacity;
+        index = (index + 1) & (table->capacity - 1); // note: このハッシュ表のサイズは必ず2のN乗になるので，(index + 1) % table->capacity と結果は同じだが，高速化のためにビット演算で実装している．
     }
 }
 
