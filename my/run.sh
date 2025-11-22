@@ -38,7 +38,7 @@ echo "Building Docker image for $LANGUAGE mode..."
 docker build --target ${LANGUAGE}-build -t ${IMAGE_NAME}:${TAG} .
 
 echo "Running container in $LANGUAGE mode..."
-docker run -it --rm \
+docker run -it --rm --privileged \
     -v $(pwd)/interpreters:/app/src \
     -e CHANGED_FILES="$CHANGED_FILES" \
     ${IMAGE_NAME}:${TAG}

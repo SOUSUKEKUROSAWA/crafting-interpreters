@@ -8,8 +8,14 @@ RUN apt-get update && apt-get install -y \
     openjdk-11-jdk \
     curl \
     gnupg \
+    linux-tools-common \
+    linux-tools-generic \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# インストールされた汎用perfバイナリを探し、/usr/bin/perf に上書きシンボリックリンクを張る
+RUN mv /usr/bin/perf /usr/bin/perf.bk && \
+    ln -s /usr/lib/linux-tools/*-generic/perf /usr/bin/perf
 
 # DartはUbuntuのリポジトリにはないので、公式のリポジトリを追加する
 RUN curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \

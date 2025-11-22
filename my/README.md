@@ -43,6 +43,17 @@ clox
 clox test/sample.lox
 ```
 
+## Profiling
+
+```sh
+# Profiling
+# warning: clox のエイリアスは Bash 上で設定しただけなので，ここでは絶対パス指定が必要．
+perf record -g /app/src/clox/bin/clox /app/src/test/sample.lox
+
+# Show Result
+perf report -f
+```
+
 ## Grammar
 
 下位ほど優先度高（先に評価される）

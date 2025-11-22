@@ -55,13 +55,21 @@ if [ "$LANGUAGE" = "java" ]; then
   cd /app/src
   exec bash
 elif [ "$LANGUAGE" = "c" ]; then
+  # --- プロファイリング用フラグの設定 ---------------------------------
+  # -O3: 最大限の最適化 (実際の速度を測るため必須)
+  # -g:  デバッグ情報の付加 (関数名を特定するため必須)
+  # -pg: gprofを使う場合のみ追加してください (perf/Valgrindなら不要)
+  CFLAGS="-O3 -g" # profiling on
+  # CFLAGS="" # profiling off
+  # --------------------------------------------------------------------
+
   cd /app/src/clox/src
 
   echo "Compiling all files..."
   # すべての.cファイルをコンパイル
   for file in $(find . -name "*.c"); do
     obj_file="/app/src/clox/bin/${file%.c}.o"
-    if ! gcc -Werror -c -o "$obj_file" "$file"; then
+    if ! gcc $CFLAGS -Werror -c -o "$obj_file" "$file"; then
       echo "Error: Failed to compile $file" >&2
       echo "Compilation aborted due to error." >&2
       exit 1
@@ -72,7 +80,7 @@ elif [ "$LANGUAGE" = "c" ]; then
   # 最終的な実行ファイルをリンク
   echo "Linking executable..."
   cd /app/src/clox/bin
-  gcc -o clox *.o
+  gcc $CFLAGS -o clox *.o
   echo "Created executable: /app/src/clox/bin/clox"
 
   # エイリアスの登録
