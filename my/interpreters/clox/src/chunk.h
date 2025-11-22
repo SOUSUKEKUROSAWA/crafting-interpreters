@@ -30,7 +30,7 @@ typedef enum {
     OP_GREATER, // > @note OP_NOT と組み合わせることで <= を表現可能）
     OP_LESS, // < @note OP_NOT と組み合わせることで >= を表現可能）
     OP_ADD, // 加算
-    OP_SUBSTRACT, // 減算
+    OP_SUBTRACT, // 減算
     OP_MULTIPLY, // 乗算
     OP_DIVIDE, // 除算
     OP_NOT, // (!) 否定

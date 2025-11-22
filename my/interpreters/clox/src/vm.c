@@ -540,7 +540,7 @@ static InterpretResult run() {
                 }
                 break;
             }
-            case OP_SUBSTRACT: BINARY_OP(NUMBER_VAL, -); break;
+            case OP_SUBTRACT: BINARY_OP(NUMBER_VAL, -); break;
             case OP_MULTIPLY:  BINARY_OP(NUMBER_VAL, *); break;
             case OP_DIVIDE:    BINARY_OP(NUMBER_VAL, /); break;
             case OP_NOT:
