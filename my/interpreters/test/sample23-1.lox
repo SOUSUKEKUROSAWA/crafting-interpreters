@@ -1,0 +1,7 @@
+var a = 1;
+switch (a) {
+    case 0: print "hi";
+    case 1: print "here";
+    case 2: print "hoo";
+    default: print "default";
+}

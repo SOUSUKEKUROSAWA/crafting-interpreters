@@ -1,0 +1,54 @@
+// ベンチマークテストの際は，common.h の DEBUG_TRACE_EXECUTION を無効にすること．
+
+// クロージャなし
+print "function";
+
+fun fib(n) {
+    if (n < 2) return n;
+    return fib(n - 2) + fib(n - 1);
+}
+
+for (var i = 0; i < 10; i = i + 1) {
+    print "try:"; print i+1;
+    var start = clock();
+    print "answer:"; print fib(35);
+    print "benchmark:"; print clock() - start;
+    print "--------------------------------";
+}
+
+// クロージャあり
+print "closure";
+
+for (var i = 0; i < 10; i = i + 1) {
+    print "try:"; print i+1;
+    var start2 = clock();
+    var sum = 0;
+
+    for (var j = 0; j < 1000000; j = j + 1) {
+        fun outer(a, b, c) {
+            fun inner() {
+                return a + b + c;
+            }
+            return inner;
+        }
+
+        var closure = outer(j, j, j);
+        sum = sum + closure();
+    }
+
+    print "answer:"; print sum;
+    print "benchmark:"; print clock() - start2;
+    print "--------------------------------";
+}
+
+// benchmark results
+// | branch         | function | closure |
+// |----------------|----------|---------|
+// | main           | 5.235 s  | 3.921 s |
+// | challenge/25-1 | 7.564 s  | 2.086 s |
+
+// conclusion
+// 複雑なクロージャでは，必要な場合のみ ObjClosure でラップする方が性能が良い．
+// 通常の関数では，常に ObjClosure でラップする方が性能が良い．
+// 一般的にクロージャはこんな複雑な使い方はしない，かつクロージャを使う頻度自体が少ないはずなので，
+// challenge/25-1 の最適化が価値があるかは微妙かもしれない．

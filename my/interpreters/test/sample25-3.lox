@@ -1,0 +1,57 @@
+// Here is the classic message-based pattern:
+fun vector(x, y) {
+  fun object(message) {
+    fun add(other) {
+      return vector(x + other("x"), y + other("y"));
+    }
+
+    if (message == "x") return x;
+    if (message == "y") return y;
+    if (message == "add") return add;
+    print "unknown message";
+  }
+
+  return object;
+}
+
+var a = vector(1, 2);
+var b = vector(3, 4);
+var c = a("add")(b);
+print c("x");
+print c("y");
+
+// The constructor, "vector()" returns a closure that closes over the object's
+// fields. In this case, it's the "x" and "y" parameters. The closure accepts a
+// single argument which is the string name of the "method" to invoke on the
+// object. It supports three methods:
+//
+// "x" returns the vector's X coordinate. Likewise "y". "add" returns a second
+// function, which is the add method. That function in turn accepts an argument
+// for the other vector to add to it.
+
+// # オブジェクトは貧者のクロージャであり，クロージャは貧者のオブジェクトでもある．の意味
+// ## 「オブジェクトは貧者のクロージャ」
+// - オブジェクトはデータ（フィールド）と処理（メソッド）をまとめる仕組み。
+// - クロージャもデータ（外側の変数）と処理（関数本体）をまとめられる。
+// - このコードでは、`object(message)` がクロージャで、`x` と `y` を閉じ込め、それらにアクセスする関数を返している。
+// - つまり、オブジェクトの役割をクロージャで実現できる（だから「貧者の」＝簡易版のクロージャ）。
+// ## 「クロージャは貧者のオブジェクト」
+// - オブジェクトは複数のメソッドを直接持てる（例: `obj.x`, `obj.add()`）。
+// - クロージャは通常1つの関数。複数の「メソッド」を模擬するには、メッセージパッシングのような仕組みが必要になる。
+// - このコードでは、`object(message)` に文字列を渡してメソッドを選択する必要がある（例: `a("x")`, `a("add")`）。直接メソッド呼び出しと比べて間接的。
+// ```3:15:sample/craftinginterpreters/note/answers/chapter25_closures/3.lox
+//   fun object(message) {
+//     fun add(other) {
+//       return vector(x + other("x"), y + other("y"));
+//     }
+//     if (message == "x") return x;
+//     if (message == "y") return y;
+//     if (message == "add") return add;
+//     print "unknown message";
+//   }
+//   return object;
+// ```
+// ## まとめ
+// - オブジェクト → クロージャ: データと処理をまとめる点で同じ役割を担える。
+// - クロージャ → オブジェクト: オブジェクトは複数のメソッドを直接提供できるが、クロージャで同じことをするには間接的な仕組みが必要。
+// このコードは、クロージャだけでオブジェクトのような振る舞いを実装する例です。Smalltalk や一部の関数型言語で使われる「メッセージパッシング」パターンに基づいています。

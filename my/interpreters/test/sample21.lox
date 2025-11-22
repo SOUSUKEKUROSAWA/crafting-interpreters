@@ -1,0 +1,8 @@
+var breakfast = "beignets";
+var beverage = "cafe au lait";
+breakfast = "beignets with " + beverage;
+print breakfast;
+
+// var a;
+// var b;
+// a * b = 1 + 2;

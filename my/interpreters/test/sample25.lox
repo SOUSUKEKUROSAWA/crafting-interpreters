@@ -1,0 +1,79 @@
+var x = "global";
+
+fun outer() {
+    var x = "outer";
+    fun inner() {
+        print x;
+    }
+    inner();
+}
+
+outer();
+
+// ---------------------------------------
+
+// fun outer2() {
+//     var y = "value";
+
+//     fun middle2() {
+//         fun inner2() {
+//             print y;
+//         }
+
+//         print "create inner closure";
+//         return inner2;
+//     }
+
+//     print "return from outer";
+//     return middle2;
+// }
+
+// var mid = outer2();
+// var in = mid();
+// in();
+
+// ---------------------------------------
+
+// fun outer3() {
+//     var a = 1;
+//     var b = 2;
+//     fun middle3() {
+//         var c = 3;
+//         var d = 4;
+//         fun inner3() {
+//             print a + b + c + d;
+//         }
+//     }
+// }
+
+// ---------------------------------------
+
+// fun outer4() {
+//     var z = "before";
+//     fun inner4() {
+//         z = "assigned";
+//     }
+//     inner4();
+//     print z;
+// }
+
+// outer4();
+
+// ---------------------------------------
+
+// var globalSet;
+// var globalGet;
+
+// fun main() {
+//     var a = "initial";
+
+//     fun set() { a = "updated"; }
+//     fun get() { print a; }
+
+//     globalSet = set;
+//     globalGet = get;
+// }
+
+// main();
+// globalSet();
+// globalGet(); // updated

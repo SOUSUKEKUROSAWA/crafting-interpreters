@@ -1,0 +1,36 @@
+{
+    var a = 1;
+    {
+        var b = 2;
+        {
+            var c = 3;
+            {
+                var c = "i";
+                a = "ii";
+                b = "iii";
+                print c;
+                var d = 4;
+            }
+            var e = 5;
+            print a;
+            print b;
+            print c;
+        }
+    }
+    var f = 6;
+    {
+        var a = "iv";
+        var g = 7;
+        print a;
+        print f;
+        print g;
+    }
+}
+
+// Edge case
+// {
+//     var a = "outer";
+//     {
+//         var a = a; // Error
+//     }
+// }

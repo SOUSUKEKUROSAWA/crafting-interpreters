@@ -1,0 +1,23 @@
+var condition1 = true;
+
+if (condition1) {
+    print "condition1 was truthy.";
+} else {
+    print "condition1 was falsey.";
+}
+
+var condition2 = true;
+
+if (condition1 and condition2) print "condition1 and condition2 were truthy.";
+
+if (condition1 or condition2) print "condition1 or condition2 were truthy.";
+
+var condition3 = true;
+while (condition3) {
+    print "condition3 was truthy.";
+    condition3 = false;
+}
+
+for (var a = 1; a < 10; a = a + 1) {
+    print a;
+}

@@ -32,7 +32,7 @@ CLOX
 jlox
 
 # Run File
-jlox sample.lox
+jlox test/sample.lox
 ```
 
 ```sh
@@ -40,7 +40,7 @@ jlox sample.lox
 clox
 
 # Run File
-clox sample.lox
+clox test/sample.lox
 ```
 
 ## Grammar
