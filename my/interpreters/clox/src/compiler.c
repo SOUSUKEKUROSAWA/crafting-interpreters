@@ -98,7 +98,7 @@ typedef struct ClassCompiler {
 } ClassCompiler;
 
 
-static Parser parser;
+Parser parser;
 Compiler* current = NULL;
 ClassCompiler* currentClass = NULL; // 現在コンパイルされている中で最も内側のクラスを表現する構造体へのポインタ．@note どのクラスの内側でもない場合は NULL．
 
@@ -976,7 +976,7 @@ static void classDeclaration() {
 
     ClassCompiler classCompiler;
     classCompiler.enclosing = currentClass;
-    classCompiler.hasSuperclass = true;
+    classCompiler.hasSuperclass = false;
     currentClass = &classCompiler;
 
     // 継承
@@ -988,14 +988,15 @@ static void classDeclaration() {
             error("A class can't inherit from itself.");
         }
 
+        // この時点でスタックトップにスーパークラスが残っている状態（サブクラスは OP_INHERIT でポップされる）．
+        beginScope();
+        addLocal(syntheticToken("super"));
+        defineVariable(0); // スーパークラスを隠し変数 super に束縛
+
         namedVariable(className, false); // サブクラスをスタックにプッシュする．
         emitByte(OP_INHERIT);
         classCompiler.hasSuperclass = true;
     }
-    // この時点でスタックトップにスーパークラスが残っている状態（サブクラスは OP_INHERIT でポップされる）．
-    beginScope();
-    addLocal(syntheticToken("super"));
-    defineVariable(0); // スーパークラスを隠し変数 super に束縛
 
     namedVariable(className, false); // クラスがスタックにロードされる．
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
