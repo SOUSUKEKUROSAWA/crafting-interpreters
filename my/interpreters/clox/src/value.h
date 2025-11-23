@@ -6,6 +6,12 @@
 typedef struct Obj Obj;
 typedef struct ObjString ObjString;
 
+#ifdef NAN_BOXING
+
+typedef uint64_t Value;
+
+#else
+
 typedef enum {
     VAL_BOOL,
     VAL_NIL,
@@ -51,6 +57,8 @@ typedef struct {
 #define NIL_VAL             ((Value){VAL_NIL, {.number = 0}}) // 渡されたC言語の値から，nil 型の Value を生成する．
 #define NUMBER_VAL(value)   ((Value){VAL_NUMBER, {.number = value}}) // 渡されたC言語の値から，数値型の Value を生成する．
 #define OBJ_VAL(object)      ((Value){VAL_OBJ, {.obj = (Obj*)object}}) // 渡されたC言語の値から，オブジェクト型の Value を生成する．
+
+#endif
 
 typedef struct {
     int capacity; // 総容量

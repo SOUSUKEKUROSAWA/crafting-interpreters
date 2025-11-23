@@ -10,6 +10,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define NAN_BOXING // NaNボクシングを有効化するモード．@warning 全てのCPUアーキテクチャで動作するとは限らない．
+
 // #define DEBUG_PRINT_CODE
 
 // #define DEBUG_TRACE_EXECUTION // オペコードやスタックの値を出力するモード．@warning 性能には悪影響を及ぼす．
