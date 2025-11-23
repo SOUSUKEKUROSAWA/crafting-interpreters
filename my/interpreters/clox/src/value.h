@@ -1,6 +1,7 @@
 #ifndef clox_value_h
 #define clox_value_h
 
+#include <string.h>
 #include "common.h"
 
 typedef struct Obj Obj;
@@ -8,7 +9,36 @@ typedef struct ObjString ObjString;
 
 #ifdef NAN_BOXING
 
+#define QNAN ((uint64_t)0x7ffc000000000000) // クワイエットNaN: 64 bit の double（浮動小数点型の数値）のうち，全ての指数ビットが 1 のもの（= NaN），かつ仮数部の最上位ビットが 1 のもの（0 のものはシグナリング NaN と呼ばれる．）．
+
 typedef uint64_t Value;
+
+#define IS_NUMBER(value) (((value) & QNAN) != QNAN) // クワイエットNaN でない double 型は全て数値である．
+
+#define AS_NUMBER(value) valueToNum(value)
+
+#define NUMBER_VAL(num) numToValue(num)
+
+/**
+ * 所与の Value 型の値を、そのビット配列（0と1の並び）を変えずにそのまま double 型の数値として保存する．
+ */
+static inline double valueToNum(Value value) {
+    double num;
+    memcpy(&num, &value, sizeof(Value));
+    return num;
+}
+
+/**
+ * 所与の double 型の数値を、そのビット配列（0と1の並び）を変えずにそのまま Value 型として保存する．
+ *
+ * @note 通常、異なる型への代入（キャスト）を行うと、値の変換が行われる（例：intの 3 を float にすると、内部表現が変わる）．
+ *       しかし、ここでは memcpy を使うことで、メモリ上の「生のデータ」をコピーする．
+ */
+static inline Value numToValue(double num) {
+    Value value;
+    memcpy(&value, &num, sizeof(double));
+    return value;
+}
 
 #else
 
