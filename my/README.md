@@ -51,6 +51,8 @@ clox test/sample.lox
 perf record -g /app/src/clox/bin/clox /app/src/test/sample.lox
 
 # Show Result
+# note: 気になった行で[a]ボタンを押すと Annotate モードになり，関数内の詳細な負荷割合を閲覧できる．
+# note: Annotate モード内で[h]ボタンを押すと，コマンドヘルプを確認できる．
 perf report -f
 ```
 
