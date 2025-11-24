@@ -9,7 +9,8 @@ typedef struct ObjString ObjString;
 
 #ifdef NAN_BOXING
 
-#define QNAN ((uint64_t)0x7ffc000000000000) // クワイエットNaN: 64 bit の double（浮動小数点型の数値）のうち，全ての指数ビットが 1 のもの（= NaN），かつ仮数部の最上位ビットが 1 のもの（0 のものはシグナリング NaN と呼ばれる．），かつその隣のビットが 1 のもの（Intel の予約済みビット）． = 0111111111111100000000000000000000000000000000000000000000000000 (2進数)
+#define SIGN_BIT    ((uint64_t)0x8000000000000000) // 先頭の符号ビットだけ 1 にしたもの．                                                                                                                                                                                                            = 1000000000000000000000000000000000000000000000000000000000000000 (2進数)
+#define QNAN        ((uint64_t)0x7ffc000000000000) // クワイエットNaN: 64 bit の double（浮動小数点型の数値）のうち，全ての指数ビットが 1 のもの（= NaN），かつ仮数部の最上位ビットが 1 のもの（0 のものはシグナリング NaN と呼ばれる．），かつその隣のビットが 1 のもの（Intel の予約済みビット）． = 0111111111111100000000000000000000000000000000000000000000000000 (2進数)
 
 #define TAG_NIL     1 // 01
 #define TAG_FALSE   2 // 10
@@ -20,15 +21,18 @@ typedef uint64_t Value;
 #define IS_BOOL(value)      (((value) | 1) == TRUE_VAL) // @note 末尾 1 bit だけ立てることで，末尾 2 bit を 01, 11 の 2 パターンだけに絞り，true/false の場合は必ず 11 になり，その他の型（nil や数値）の場合は必ず 01 になることを利用して判定する．
 #define IS_NIL(value)       ((value) == NIL_VAL)
 #define IS_NUMBER(value)    (((value) & QNAN) != QNAN) // クワイエットNaN でない double 型は全て数値である．
+#define IS_OBJ(value)       (((value) & (QNAN | SIGN_BIT)) == (QNAN | SIGN_BIT)) // 先頭の符号ビットが 1 のクワイエットNaNはオブジェクトである．
 
 #define AS_BOOL(value)      ((value) == TRUE_VAL) // @note このマクロは，Lox のブール値だと分かっている Value にだけ呼び出されることを前提としているので，true でなければ必ず false．
 #define AS_NUMBER(value)    valueToNum(value)
+#define AS_OBJ(value)       ((Obj*)(uintptr_t)((value) & ~(SIGN_BIT | QNAN))) // SIGN_BIT と QNAN のビットをクリアして，元のオブジェクト（ポインタ）に戻す．@note ~ はビットを全て反転させる演算．
 
 #define BOOL_VAL(b)     ((b) ? TRUE_VAL : FALSE_VAL) // C の bool を Lox の Boolean に変換する．
-#define FALSE_VAL       ((Value)(uint64_t)(QNAN | TAG_FALSE)) // 末尾 2 bit が 10 になっているクワイエットNaNを nil として扱う．
-#define TRUE_VAL        ((Value)(uint64_t)(QNAN | TAG_TRUE)) // 末尾 2 bit が 11 になっているクワイエットNaNを nil として扱う．
+#define FALSE_VAL       ((Value)(uint64_t)(QNAN | TAG_FALSE)) // 末尾 2 bit が 10 になっているクワイエットNaNを false として扱う．
+#define TRUE_VAL        ((Value)(uint64_t)(QNAN | TAG_TRUE)) // 末尾 2 bit が 11 になっているクワイエットNaNを true として扱う．
 #define NIL_VAL         ((Value)(uint64_t)(QNAN | TAG_NIL)) // 末尾 2 bit が 01 になっているクワイエットNaNを nil として扱う．
 #define NUMBER_VAL(num) numToValue(num)
+#define OBJ_VAL(obj)    (Value)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj)) // 先頭 1 bit が 1 になっているクワイエットNaNをオブジェクトとして扱う．@note ポインタ（obj）は 64 bit 使うが，ほとんどのCPUアーキテクチャでは，下位 48 bit しか使っていないので，クワイエットNaNの領域内に表現可能．
 
 /**
  * 所与の Value 型の値を、そのビット配列（0と1の並び）を変えずにそのまま double 型の数値として保存する．
